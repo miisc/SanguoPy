@@ -1,0 +1,16 @@
+# 朝会系统功能文档
+
+## 系统概述
+
+朝会系统是三国策略游戏中的核心决策系统，模拟古代朝廷议事过程，让朝臣提出政见和方案，君主（玩家）从多个方案中选择执行，不同选择会对国家产生不同影响。
+
+## 功能模块（按开发顺序）
+
+1. [00_COURT_MEETING_OVERVIEW.md](00_COURT_MEETING_OVERVIEW.md) - 朝会系统总览
+2. [01_COURT_MEETING_BASIC_FRAMEWORK.md](01_COURT_MEETING_BASIC_FRAMEWORK.md) - 基础朝会框架与UI
+3. [02_COURT_MEETING_TOPICS.md](02_COURT_MEETING_TOPICS.md) - 朝会议题生成系统
+4. [03_COURT_MEETING_MINISTERS.md](03_COURT_MEETING_MINISTERS.md) - 朝臣意见系统
+5. [04_COURT_MEETING_DECISION.md](04_COURT_MEETING_DECISION.md) - 决策与结果系统
+6. [05_COURT_MEETING_HISTORY.md](05_COURT_MEETING_HISTORY.md) - 朝会记录与历史评价
+7. [06_COURT_MEETING_AI.md](06_COURT_MEETING_AI.md) - AI朝会系统
+8. [07_COURT_MEETING_INTEGRATION.md](07_COURT_MEETING_INTEGRATION.md) - 朝会系统集成与优化

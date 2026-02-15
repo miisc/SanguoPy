@@ -23,60 +23,28 @@
 3. **自动移动**：系统计算路径并开始移动
 4. **路径提示**：弹窗显示军队将经过的城市路径
 
-## 代码实现
+## 技术实现
 
-### 新增函数
+### 路径查找算法
+使用广度优先搜索(BFS)算法查找城市之间的最短路径：
+- 构建道路网络的邻接表表示
+- 从起始城市开始搜索，逐层扩展
+- 找到目标城市时回溯路径
+- 如果没有道路连接，返回无法到达
 
-#### `js/data/military.js`
+### 移动系统设计
+军队移动系统需要包含以下核心组件：
+- 路径计算模块：计算两点间的最短道路路径
+- 移动控制模块：控制军队的移动过程
+- 状态管理模块：管理军队的移动状态
+- 用户交互模块：处理用户的移动请求
 
-```javascript
-// 查找两个城市之间通过道路的路径
-findRoadPath(fromCityId, toCityId, roads, cities)
-
-// 将城市路径转换为坐标路径
-convertCityPathToCoordinates(cityPath, cities)
-```
-
-#### `js/data/gameState.js`
-
-```javascript
-// 移动军队到目标城市（新接口）
-moveArmyToCity(armyId, targetCityId)
-```
-
-### 修改的函数
-
-#### `js/render/mapRenderer.js`
-
-**之前**：点击地图任意位置，军队直接移动到该位置
-
-**现在**：只能点击城市，军队沿道路移动到该城市
-
-#### `js/data/gameState.js`
-
-**updateArmies()**：军队到达目标城市后，更新其驻扎位置（origin）
-
-## 使用示例
-
-### 1. 招募军队
-```javascript
-// 在成都招募军队
-gameState.recruitArmy('chengdu', 'liubei', 1000);
-```
-
-### 2. 移动军队
-```javascript
-// 移动军队从成都到襄阳（通过汉中）
-gameState.moveArmyToCity('army1', 'xiangyang');
-// 系统自动查找路径: 成都 → 汉中 → 襄阳
-```
-
-### 3. 无法到达
-```javascript
-// 尝试移动到没有道路连接的城市
-gameState.moveArmyToCity('army1', 'isolated_city');
-// 返回: { success: false, message: "无法通过道路到达该城市，请建造道路连接" }
-```
+### 数据结构设计
+军队移动需要以下数据结构：
+- 军队数据：包含ID、当前位置、目标位置、移动状态
+- 道路数据：包含连接的城市和道路属性
+- 路径数据：包含移动路径的中间节点
+- 移动状态：包含当前移动进度和下一步目标
 
 ## 路径示例
 
@@ -147,3 +115,9 @@ gameState.moveArmyToCity('army1', 'isolated_city');
 
 ## 更新日期
 2026年2月14日
+
+## 技术栈更新
+- 🔄 **架构迁移**: 从Web技术栈迁移至PyQt桌面应用
+- 🔄 **数据结构**: 使用Python字典和类替代JavaScript对象
+- 🔄 **UI组件**: 使用PyQt QGraphicsView/QGraphicsItem替代HTML Canvas
+- 🔄 **事件处理**: 使用PyQt信号槽机制替代JavaScript事件监听器

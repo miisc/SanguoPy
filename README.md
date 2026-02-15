@@ -25,21 +25,13 @@ pip install PyQt5
 python main.py
 ```
 
-## 项目结构
+## 技术架构
 
-```
-SanGuoHtmlDemo/
-├── README.md              # 项目简要说明
-├── 需求文档.md             # 完整需求文档
-├── main.py               # 主入口文件
-├── css/                  # 样式文件
-├── js/                   # JavaScript文件
-├── docs/                 # 文档目录
-│   ├── features/         # 功能说明
-│   ├── phases/           # 实施阶段
-│   └── tests/            # 测试结果
-└── ...
-```
+- **框架**: PyQt5
+- **架构模式**: MVC (Model-View-Controller)
+- **编程语言**: Python 3.8+
+- **数据存储**: JSON文件 + SQLite数据库
+- **图形渲染**: QGraphicsScene/QGraphicsView
 
 ## 许可证
 
