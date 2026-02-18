@@ -1,0 +1,116 @@
+/* 朝会对话框样式 */
+
+QDialog {
+    background-color: #f5f5dc;
+}
+
+/* 朝会标题样式 */
+QLabel#title {
+    color: #8B4513;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 议题区域样式 */
+QGroupBox {
+    font-weight: bold;
+    border: 2px solid #8B4513;
+    border-radius: 5px;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 5px 0 5px;
+}
+
+/* 朝臣意见区域样式 */
+QFrame {
+    background-color: #f9f9e9;
+    border: 1px solid #D2691E;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 5px;
+}
+
+/* 决策选项样式 */
+QRadioButton {
+    font-size: 14px;
+    font-weight: bold;
+    color: #8B4513;
+}
+
+QRadioButton::indicator {
+    width: 18px;
+    height: 18px;
+}
+
+QRadioButton::indicator:unchecked {
+    border: 2px solid #8B4513;
+    border-radius: 9px;
+    background-color: white;
+}
+
+QRadioButton::indicator:checked {
+    border: 2px solid #8B4513;
+    border-radius: 9px;
+    background-color: #D2691E;
+}
+
+/* 文本编辑区域样式 */
+QTextEdit {
+    background-color: #f9f9e9;
+    border: 1px solid #D2691E;
+    border-radius: 5px;
+    padding: 5px;
+    font-family: "SimSun", "宋体", serif;
+}
+
+/* 滚动区域样式 */
+QScrollArea {
+    border: 1px solid #8B4513;
+    border-radius: 5px;
+    background-color: #f5f5dc;
+}
+
+QScrollBar:vertical {
+    background-color: #f5f5dc;
+    width: 12px;
+    border-radius: 6px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #D2691E;
+    border-radius: 6px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #A0522D;
+}
+
+/* 按钮样式 */
+QPushButton {
+    background-color: #8B4513;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+QPushButton:hover {
+    background-color: #A0522D;
+}
+
+QPushButton:pressed {
+    background-color: #654321;
+}
+
+QPushButton:disabled {
+    background-color: #cccccc;
+    color: #666666;
+}

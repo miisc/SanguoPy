@@ -1,0 +1,122 @@
+{
+  "caocao": {
+    "id": "caocao",
+    "name": "曹操",
+    "title": "丞相",
+    "faction": "wei",
+    "loyalty": 95,
+    "leadership": 95,
+    "strength": 72,
+    "intelligence": 91,
+    "politics": 94,
+    "charm": 92
+  },
+  "liubei": {
+    "id": "liubei",
+    "name": "刘备",
+    "title": "皇叔",
+    "faction": "shu",
+    "loyalty": 90,
+    "leadership": 87,
+    "strength": 75,
+    "intelligence": 74,
+    "politics": 76,
+    "charm": 99
+  },
+  "sunquan": {
+    "id": "sunquan",
+    "name": "孙权",
+    "title": "吴侯",
+    "faction": "wu",
+    "loyalty": 88,
+    "leadership": 86,
+    "strength": 70,
+    "intelligence": 80,
+    "politics": 87,
+    "charm": 89
+  },
+  "zhugeliang": {
+    "id": "zhugeliang",
+    "name": "诸葛亮",
+    "title": "军师",
+    "faction": "shu",
+    "loyalty": 95,
+    "leadership": 88,
+    "strength": 38,
+    "intelligence": 100,
+    "politics": 88,
+    "charm": 92
+  },
+  "simayi": {
+    "id": "simayi",
+    "name": "司马懿",
+    "title": "太傅",
+    "faction": "wei",
+    "loyalty": 85,
+    "leadership": 91,
+    "strength": 63,
+    "intelligence": 96,
+    "politics": 90,
+    "charm": 79
+  },
+  "zhouyu": {
+    "id": "zhouyu",
+    "name": "周瑜",
+    "title": "大都督",
+    "faction": "wu",
+    "loyalty": 92,
+    "leadership": 96,
+    "strength": 71,
+    "intelligence": 96,
+    "politics": 83,
+    "charm": 98
+  },
+  "guanyu": {
+    "id": "guanyu",
+    "name": "关羽",
+    "title": "将军",
+    "faction": "shu",
+    "loyalty": 98,
+    "leadership": 93,
+    "strength": 97,
+    "intelligence": 76,
+    "politics": 62,
+    "charm": 93
+  },
+  "zhangfei": {
+    "id": "zhangfei",
+    "name": "张飞",
+    "title": "将军",
+    "faction": "shu",
+    "loyalty": 95,
+    "leadership": 88,
+    "strength": 98,
+    "intelligence": 23,
+    "politics": 11,
+    "charm": 74
+  },
+  "zhaoyun": {
+    "id": "zhaoyun",
+    "name": "赵云",
+    "title": "将军",
+    "faction": "shu",
+    "loyalty": 96,
+    "leadership": 91,
+    "strength": 96,
+    "intelligence": 76,
+    "politics": 65,
+    "charm": 85
+  },
+  "luxun": {
+    "id": "luxun",
+    "name": "陆逊",
+    "title": "大都督",
+    "faction": "wu",
+    "loyalty": 90,
+    "leadership": 90,
+    "strength": 68,
+    "intelligence": 96,
+    "politics": 88,
+    "charm": 92
+  }
+}

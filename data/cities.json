@@ -1,0 +1,62 @@
+{
+  "luoyang": {
+    "id": "luoyang",
+    "name": "洛阳",
+    "x": 400,
+    "y": 300,
+    "faction": "wei",
+    "population": 150000,
+    "gold": 3000,
+    "food": 10000,
+    "soldiers": 5000,
+    "defense": 80
+  },
+  "chengdu": {
+    "id": "chengdu",
+    "name": "成都",
+    "x": 200,
+    "y": 400,
+    "faction": "shu",
+    "population": 120000,
+    "gold": 2500,
+    "food": 12000,
+    "soldiers": 4000,
+    "defense": 70
+  },
+  "jianye": {
+    "id": "jianye",
+    "name": "建业",
+    "x": 600,
+    "y": 400,
+    "faction": "wu",
+    "population": 130000,
+    "gold": 2800,
+    "food": 9000,
+    "soldiers": 4500,
+    "defense": 75
+  },
+  "chang'an": {
+    "id": "chang'an",
+    "name": "长安",
+    "x": 350,
+    "y": 250,
+    "faction": "wei",
+    "population": 100000,
+    "gold": 2000,
+    "food": 8000,
+    "soldiers": 3000,
+    "defense": 65
+  },
+  "xuchang": {
+    "id": "xuchang",
+    "name": "许昌",
+    "x": 450,
+    "y": 320,
+    "faction": "wei",
+    "population": 90000,
+    "gold": 1800,
+    "food": 7000,
+    "soldiers": 2500,
+    "defense": 60
+  }
+}
