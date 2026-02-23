@@ -98,15 +98,17 @@ class PalaceDialog(QDialog):
     
     def _handle_emergency_court(self):
         """处理紧急朝会"""
-        # 打开朝会对话框
-        court_dialog = CourtMeetingDialog(self.game_controller, self, "emergency")
-        court_dialog.exec_()
+        # 通知父窗口开始紧急朝会
+        if self.parent() and hasattr(self.parent(), '_start_emergency_court_in_panel'):
+            self.parent()._start_emergency_court_in_panel()
+        self.close()
     
     def _handle_monthly_court(self):
         """处理每月大朝会"""
-        # 打开朝会对话框
-        court_dialog = CourtMeetingDialog(self.game_controller, self, "monthly")
-        court_dialog.exec_()
+        # 通知父窗口开始月度朝会
+        if self.parent() and hasattr(self.parent(), '_start_monthly_court_in_panel'):
+            self.parent()._start_monthly_court_in_panel()
+        self.close()
     
     def _manage_harem(self):
         """管理后宫"""
@@ -154,6 +156,10 @@ class WeiyangMainWindow(QMainWindow):
         self.game_controller.game_updated.connect(self._on_game_updated)
         self.game_controller.monthly_court_due.connect(self._on_monthly_court_due)
         self.game_controller.court_meeting_system.meeting_completed.connect(self._on_court_meeting_completed)
+        
+        # 连接UI框架信号
+        self.map_frame.court_decision.connect(self._on_court_decision)
+        self.map_frame.court_meeting_completed.connect(self._on_court_meeting_completed)
         
         # 连接窗口大小改变事件
         self.resizeEvent = self._on_window_resize
@@ -254,29 +260,103 @@ class WeiyangMainWindow(QMainWindow):
     
     def _on_palace_clicked(self, palace_name):
         """处理宫殿点击事件"""
-        # 打开宫殿对话框
+        # 如果是承明殿，直接在信息面板显示大朝会
+        if palace_name == "承明殿":
+            # 暂停游戏时间
+            self._pause_game()
+            # 开始月度朝会
+            self._start_monthly_court_in_panel()
+            return
+        # 如果是宣室殿，直接在信息面板显示紧急朝会
+        elif palace_name == "宣室殿":
+            # 暂停游戏时间
+            self._pause_game()
+            # 开始紧急朝会
+            self._start_emergency_court_in_panel()
+            return
+        
+        # 否则打开宫殿对话框
         palace_dialog = PalaceDialog(palace_name, self.game_controller, self)
         palace_dialog.exec_()
     
     def _on_monthly_court_due(self, game_info):
         """处理月度朝会到期"""
-        year = game_info["year"]
-        month = game_info["month"]
+        # 直接开始月度朝会，不弹出提示框
+        self._start_monthly_court_in_panel()
+    
+    def _start_monthly_court_in_panel(self):
+        """在信息面板中开始月度朝会"""
+        # 暂停游戏时间
+        self._pause_game()
         
-        if hasattr(self.map_frame, 'status_msg_label'):
-            self.map_frame.status_msg_label.setText(f"大朝会提醒：今天是{year}年{month}月初一，建议召开大朝会。")
+        # 获取月度朝会数据
+        meeting_data = self.game_controller.get_monthly_court_data()
+        if meeting_data:
+            # 在信息面板显示朝会
+            self.map_frame.show_court_meeting(meeting_data)
+            # 更新状态消息
+            self.status_bar.showMessage("月度朝会开始")
+    
+    def _start_emergency_court_in_panel(self):
+        """在信息面板中开始紧急朝会"""
+        # 暂停游戏时间
+        self._pause_game()
         
-        # 弹出提示框
-        from PyQt5.QtWidgets import QMessageBox
-        reply = QMessageBox.information(None, "大朝会提醒", 
-                                      f"今天是{year}年{month}月初一，建议召开大朝会。\n是否前往承明殿召开大朝会？",
-                                      QMessageBox.Yes | QMessageBox.No)
+        # 获取紧急朝会数据
+        meeting_data = self.game_controller.get_emergency_court_data()
+        if meeting_data:
+            # 在信息面板显示朝会
+            self.map_frame.show_court_meeting(meeting_data)
+            # 更新状态消息
+            self.status_bar.showMessage("紧急朝会开始")
+    
+    def _on_court_decision(self, option_id):
+        """处理朝会决策"""
+        # 验证选项ID
+        if option_id is None:
+            QMessageBox.warning(self, "决策错误", "无效的决策选项")
+            return
         
-        if reply == QMessageBox.Yes:
-            # 打开承明殿对话框
-            palace_dialog = PalaceDialog("承明殿", self.game_controller, self)
-            palace_dialog.enable_monthly_court()  # 启用月度朝会按钮
-            palace_dialog.exec_()
+        # 获取当前朝会数据，判断朝会类型
+        meeting_data = self.game_controller.get_monthly_court_data()
+        if not meeting_data:
+            meeting_data = self.game_controller.get_emergency_court_data()
+        
+        # 根据朝会类型调用不同的决策方法
+        if meeting_data and meeting_data.get("type") == "emergency":
+            # 紧急朝会决策
+            result = self.game_controller.make_emergency_decision(option_id)
+        else:
+            # 月度朝会决策
+            result = self.game_controller.make_monthly_decision(option_id)
+        
+        if result.get("success", False):
+            # 更新状态消息
+            decision_message = result.get('message', '决策已执行')
+            self.status_bar.showMessage(f"已做出决策: {decision_message}")
+            
+            # 检查是否还有更多议题
+            if result.get("has_more_topics", False):
+                # 更新朝会信息
+                if meeting_data and meeting_data.get("type") == "emergency":
+                    update_data = self.game_controller.get_emergency_court_data()
+                else:
+                    update_data = self.game_controller.get_monthly_court_data()
+                if update_data:
+                    self.map_frame.update_court_meeting(update_data)
+            else:
+                # 朝会完成
+                self.map_frame.show_court_meeting_complete()
+                self.status_bar.showMessage("朝会完成")
+                
+                # 更新游戏状态显示
+                game_info = self.game_controller.get_game_info()
+                self._on_time_advanced(game_info)
+        else:
+            # 决策失败
+            error_message = result.get("message", "未知错误")
+            QMessageBox.warning(self, "决策失败", error_message)
+            self.status_bar.showMessage(f"决策失败: {error_message}")
     
     def _update_game_time(self):
         """更新游戏时间"""
@@ -291,23 +371,6 @@ class WeiyangMainWindow(QMainWindow):
         
         # 更新UI框架中的时间信息
         self.map_frame.update_time_info(current_year, current_month, current_day)
-        
-        # 检查是否是月初一，触发大朝会
-        if current_day == 1:
-            if hasattr(self.map_frame, 'status_msg_label'):
-                self.map_frame.status_msg_label.setText(f"大朝会提醒：今天是{current_year}年{current_month}月初一，建议召开大朝会。")
-            
-            # 弹出提示框
-            from PyQt5.QtWidgets import QMessageBox
-            reply = QMessageBox.information(None, "大朝会提醒", 
-                                          f"今天是{current_year}年{current_month}月初一，建议召开大朝会。\n是否前往承明殿召开大朝会？",
-                                          QMessageBox.Yes | QMessageBox.No)
-            
-            if reply == QMessageBox.Yes:
-                # 打开承明殿对话框
-                palace_dialog = PalaceDialog("承明殿", self.game_controller, self)
-                palace_dialog.enable_monthly_court()  # 启用月度朝会按钮
-                palace_dialog.exec_()
     
     def _new_game(self):
         """开始新游戏"""
@@ -488,7 +551,13 @@ class WeiyangMainWindow(QMainWindow):
         # 可以在这里添加游戏状态更新的UI响应
         pass
     
-    def _on_court_meeting_completed(self, meeting_result):
+    def _on_court_meeting_completed(self, meeting_result=None):
         """处理朝会完成"""
         # 更新UI状态，显示朝会结果
-        self.status_bar.showMessage(f"朝会完成: {meeting_result.get('topic', {}).get('title', '未知议题')}")
+        if meeting_result:
+            self.status_bar.showMessage(f"朝会完成: {meeting_result.get('topic', {}).get('title', '未知议题')}")
+        else:
+            self.status_bar.showMessage("朝会完成")
+        
+        # 恢复游戏时间
+        self._set_normal_speed()

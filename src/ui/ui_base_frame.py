@@ -8,8 +8,8 @@ UI系统基础框架
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QFrame, QGraphicsView,
-                             QGraphicsScene, QGraphicsPixmapItem)
-from PyQt5.QtCore import Qt, pyqtSignal, QSize, QRectF
+                             QGraphicsScene, QGraphicsPixmapItem, QButtonGroup, QRadioButton)
+from PyQt5.QtCore import Qt, pyqtSignal, QSize, QRectF, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
 
 
@@ -19,6 +19,8 @@ class UIBaseFrame(QWidget):
     # 信号定义
     palace_clicked = pyqtSignal(str)  # 宫殿点击信号
     character_clicked = pyqtSignal(str)  # 人物点击信号
+    court_decision = pyqtSignal(str)  # 朝会决策信号
+    court_meeting_completed = pyqtSignal()  # 朝会完成信号
     
     def __init__(self, parent=None):
         """初始化UI基础框架"""
@@ -39,6 +41,11 @@ class UIBaseFrame(QWidget):
         self.season_label = None
         self.gold_label = None
         self.food_label = None
+        
+        # 朝会状态
+        self.court_meeting_active = False
+        self.current_meeting_data = None
+        self.option_buttons = None
         
         # 初始化UI
         self._init_ui()
@@ -61,11 +68,11 @@ class UIBaseFrame(QWidget):
         central_layout.setContentsMargins(5, 5, 5, 5)  # 添加内边距
         central_layout.setSpacing(10)  # 添加间距
         
-        # 中央区域将用于放置未央宫地图
-        self.central_area = self._create_palace_map()
-        central_layout.addWidget(self.central_area, 7)  # 占70%宽度
+        # 左侧主要信息区域（用于显示朝会议案信息及选项）
+        self.main_content_area = self._create_main_content_area()
+        central_layout.addWidget(self.main_content_area, 7)  # 占70%宽度
         
-        # 右侧信息面板
+        # 右侧信息面板（显示各类信息提示）
         self.info_panel = self._create_info_panel()
         central_layout.addWidget(self.info_panel, 3)  # 占30%宽度
         
@@ -305,6 +312,63 @@ class UIBaseFrame(QWidget):
         return frame
     
     
+    def _create_main_content_area(self):
+        """创建左侧主要信息区域"""
+        frame = QFrame()
+        frame.setFrameStyle(QFrame.Box)
+        frame.setMinimumSize(600, 400)  # 设置最小尺寸
+        
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(10, 10, 10, 10)  # 添加边距
+        layout.setSpacing(10)  # 添加间距
+        
+        # 默认显示宫殿地图
+        self.palace_map = self._create_palace_map()
+        layout.addWidget(self.palace_map)
+        
+        # 朝会区域（初始隐藏）
+        self.court_meeting_area = self._create_court_meeting_area()
+        self.court_meeting_area.setVisible(False)
+        layout.addWidget(self.court_meeting_area)
+        
+        return frame
+    
+    def _create_court_meeting_area(self):
+        """创建朝会区域"""
+        frame = QFrame()
+        frame.setFrameStyle(QFrame.Box)
+        
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+        
+        # 朝会标题
+        self.court_title_label = QLabel("朝会")
+        self.court_title_label.setFont(QFont("", 16, QFont.Bold))
+        self.court_title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.court_title_label)
+        
+        # 朝会信息区域
+        self.court_info_area = QLabel()
+        self.court_info_area.setAlignment(Qt.AlignTop)
+        self.court_info_area.setWordWrap(True)
+        self.court_info_area.setMinimumHeight(200)
+        layout.addWidget(self.court_info_area, 1)
+        
+        # 朝会选项区域
+        self.court_options_frame = QFrame()
+        self.court_options_frame.setFrameStyle(QFrame.Box)
+        self.court_options_layout = QVBoxLayout(self.court_options_frame)
+        layout.addWidget(self.court_options_frame)
+        
+        # 朝会决策按钮
+        self.court_decision_btn = QPushButton("做出决策")
+        self.court_decision_btn.clicked.connect(self._on_court_decision)
+        self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
+        layout.addWidget(self.court_decision_btn)
+        
+        return frame
+    
     def _create_palace_map(self):
         """创建宫殿地图"""
         frame = QFrame()
@@ -322,102 +386,136 @@ class UIBaseFrame(QWidget):
         title.setContentsMargins(0, 0, 0, 10)  # 添加底部边距
         layout.addWidget(title)
         
-        # 创建宫殿按钮区域 - 使用水平布局放置前朝和后宫两个区域
+        # 创建宫殿按钮区域 - 使用水平布局放置宫殿按钮
         palace_layout = QHBoxLayout()
         palace_layout.setSpacing(20)  # 添加区域间距
         
-        # 前朝区域
-        front_palace_frame = QFrame()
-        front_palace_frame.setFrameStyle(QFrame.Box)
-        # 设置前朝区域的样式，体现其庄重的特性
-        front_palace_frame.setStyleSheet("""
-            QFrame {
-                border: 2px solid #8B4513;  /* 深棕色边框 */
-                border-radius: 5px;
-                background-color: #FFF8DC;  /* 米色背景 */
-            }
-        """)
-        front_palace_layout = QVBoxLayout(front_palace_frame)
-        front_palace_layout.setContentsMargins(15, 15, 15, 15)  # 增加内边距
-        front_palace_layout.setSpacing(10)  # 添加按钮间距
-        
-        front_title = QLabel("前朝")
-        front_title.setFont(QFont("", 14, QFont.Bold))
-        front_title.setAlignment(Qt.AlignCenter)
-        front_title.setStyleSheet("color: #8B0000;")  # 深红色标题
-        front_title.setContentsMargins(0, 0, 0, 10)  # 添加底部边距
-        front_palace_layout.addWidget(front_title)
-        
         # 宣室殿按钮
         xuanshi_btn = QPushButton("宣室殿")
-        xuanshi_btn.clicked.connect(lambda: self.palace_clicked.emit("宣室殿"))
+        xuanshi_btn.clicked.connect(self._on_xuanshi_palace_clicked)
         xuanshi_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
         xuanshi_btn.setToolTip("处理紧急朝会，应对突发事件")  # 添加工具提示
-        front_palace_layout.addWidget(xuanshi_btn)
+        palace_layout.addWidget(xuanshi_btn)
         
         # 承明殿按钮
         chengming_btn = QPushButton("承明殿")
-        chengming_btn.clicked.connect(lambda: self.palace_clicked.emit("承明殿"))
+        chengming_btn.clicked.connect(self._on_chengming_palace_clicked)
         chengming_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
         chengming_btn.setToolTip("处理每月初一的大朝会")  # 添加工具提示
-        front_palace_layout.addWidget(chengming_btn)
+        palace_layout.addWidget(chengming_btn)
         
-        # 添加弹性空间使宫殿按钮居中
-        front_palace_layout.addStretch()
-        
-        palace_layout.addWidget(front_palace_frame, 1)  # 分配相同的空间
-        
-        # 添加分隔线，强调前朝后宫的分离
+        # 添加分隔线
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
         separator.setFrameShadow(QFrame.Sunken)
         separator.setStyleSheet("color: #8B4513;")  # 深棕色分隔线
         palace_layout.addWidget(separator)
         
-        # 后宫区域
-        rear_palace_frame = QFrame()
-        rear_palace_frame.setFrameStyle(QFrame.Box)
-        # 设置后宫区域的样式，体现其柔和的特性
-        rear_palace_frame.setStyleSheet("""
-            QFrame {
-                border: 2px solid #DA70D6;  /* 紫罗兰色边框 */
-                border-radius: 5px;
-                background-color: #FFF0F5;  /* 淡粉色背景 */
-            }
-        """)
-        rear_palace_layout = QVBoxLayout(rear_palace_frame)
-        rear_palace_layout.setContentsMargins(15, 15, 15, 15)  # 增加内边距
-        rear_palace_layout.setSpacing(10)  # 添加按钮间距
-        
-        rear_title = QLabel("后宫")
-        rear_title.setFont(QFont("", 14, QFont.Bold))
-        rear_title.setAlignment(Qt.AlignCenter)
-        rear_title.setStyleSheet("color: #DA70D6;")  # 紫罗兰色标题
-        rear_title.setContentsMargins(0, 0, 0, 10)  # 添加底部边距
-        rear_palace_layout.addWidget(rear_title)
-        
         # 椒房殿按钮
         jiaofang_btn = QPushButton("椒房殿")
         jiaofang_btn.clicked.connect(lambda: self.palace_clicked.emit("椒房殿"))
         jiaofang_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
         jiaofang_btn.setToolTip("后宫管理")  # 添加工具提示
-        rear_palace_layout.addWidget(jiaofang_btn)
+        palace_layout.addWidget(jiaofang_btn)
         
         # 长乐宫按钮
         changle_btn = QPushButton("长乐宫")
         changle_btn.clicked.connect(lambda: self.palace_clicked.emit("长乐宫"))
         changle_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
         changle_btn.setToolTip("皇室事务")  # 添加工具提示
-        rear_palace_layout.addWidget(changle_btn)
-        
-        # 添加弹性空间使宫殿按钮居中
-        rear_palace_layout.addStretch()
-        
-        palace_layout.addWidget(rear_palace_frame, 1)  # 分配相同的空间
+        palace_layout.addWidget(changle_btn)
         
         layout.addLayout(palace_layout, 1)  # 设置伸缩因子，占据大部分空间
         
         return frame
+    
+    def _on_xuanshi_palace_clicked(self):
+        """处理宣室殿点击事件"""
+        # 发射宫殿点击信号
+        self.palace_clicked.emit("宣室殿")
+    
+    def _on_chengming_palace_clicked(self):
+        """处理承明殿点击事件"""
+        # 发射宫殿点击信号
+        self.palace_clicked.emit("承明殿")
+        
+        # 显示大朝会
+        court_meeting_data = {
+            "type": "monthly",
+            "year": 190,
+            "season": 1,
+            "current_topic_index": 0,
+            "topics": [
+                {
+                    "title": "春耕筹备",
+                    "description": "春季到来，需要筹备春耕事宜。",
+                    "background": "今年气候适宜，是个丰收的好兆头，但需要足够的人力和物力支持。",
+                    "options": [
+                        {
+                            "id": "option_1",
+                            "text": "增加农田开垦",
+                            "effect": "消耗金钱 5000，粮食产量 +20%"
+                        },
+                        {
+                            "id": "option_2",
+                            "text": "维持现状",
+                            "effect": "无消耗，粮食产量不变"
+                        },
+                        {
+                            "id": "option_3",
+                            "text": "减少农业投入",
+                            "effect": "节省金钱 3000，粮食产量 -10%，民心 -5"
+                        }
+                    ]
+                },
+                {
+                    "title": "军队整编",
+                    "description": "需要对现有军队进行整编。",
+                    "background": "军队士气低落，装备陈旧，需要进行改革。",
+                    "options": [
+                        {
+                            "id": "option_1",
+                            "text": "全面整编",
+                            "effect": "消耗金钱 8000，兵力 +5000，军心 +15"
+                        },
+                        {
+                            "id": "option_2",
+                            "text": "部分调整",
+                            "effect": "消耗金钱 3000，军心 +5"
+                        },
+                        {
+                            "id": "option_3",
+                            "text": "暂不整编",
+                            "effect": "无消耗，军心 -5"
+                        }
+                    ]
+                }
+            ],
+            "topic": {
+                "title": "春耕筹备",
+                "description": "春季到来，需要筹备春耕事宜。",
+                "background": "今年气候适宜，是个丰收的好兆头，但需要足够的人力和物力支持。",
+                "options": [
+                    {
+                        "id": "option_1",
+                        "text": "增加农田开垦",
+                        "effect": "消耗金钱 5000，粮食产量 +20%"
+                    },
+                    {
+                        "id": "option_2",
+                        "text": "维持现状",
+                        "effect": "无消耗，粮食产量不变"
+                    },
+                    {
+                        "id": "option_3",
+                        "text": "减少农业投入",
+                        "effect": "节省金钱 3000，粮食产量 -10%，民心 -5"
+                    }
+                ]
+            }
+        }
+        
+        self.show_court_meeting(court_meeting_data)
     
     def _apply_base_style(self):
         """应用基础样式"""
@@ -477,6 +575,261 @@ class UIBaseFrame(QWidget):
             if isinstance(widget, QLabel) and widget != self.info_panel.layout().itemAt(0).widget():
                 widget.setText(f"<b>{title}</b><br>{content}")
                 break
+    
+    def show_court_meeting(self, meeting_data):
+        """在主要信息区域显示朝会信息"""
+        self.court_meeting_active = True
+        self.current_meeting_data = meeting_data
+        
+        # 隐藏宫殿地图，显示朝会区域
+        self.palace_map.setVisible(False)
+        self.court_meeting_area.setVisible(True)
+        
+        # 清空现有选项
+        self._clear_court_options()
+        
+        # 显示朝会标题
+        if meeting_data.get("type") == "monthly":
+            title = "月度朝会"
+            if "topics" in meeting_data:
+                total_topics = len(meeting_data["topics"])
+                current_index = meeting_data.get("current_topic_index", 0)
+                topic = meeting_data["topics"][current_index]
+                title += f" - 议题 {current_index + 1}/{total_topics}"
+        else:
+            title = "紧急朝会"
+        
+        self.court_title_label.setText(title)
+        
+        # 构建朝会信息文本
+        info_text = ""
+        
+        # 添加时间信息
+        year = meeting_data.get("year", 190)
+        season = meeting_data.get("season", 1)
+        season_names = {1: "春", 2: "夏", 3: "秋", 4: "冬"}
+        season_name = season_names.get(season, "春")
+        info_text += f"<p><b>时间:</b> {year}年 {season_name}</p>"
+        
+        # 添加议题信息
+        if "topic" in meeting_data:
+            topic = meeting_data["topic"]
+            info_text += f"<h3>{topic.get('title', '未知议题')}</h3>"
+            info_text += f"<p><b>描述:</b> {topic.get('description', '')}</p>"
+            info_text += f"<p><b>背景:</b> {topic.get('background', '')}</p>"
+            
+            # 添加选项
+            if "options" in topic:
+                info_text += "<p><b>选项:</b></p>"
+                self._add_court_options(topic["options"])
+        
+        # 更新信息标签
+        self.court_info_area.setText(info_text)
+        
+        # 在右侧信息面板显示朝会提示信息
+        self._show_court_hints(meeting_data)
+        
+        # 显示选项区域和决策按钮
+        self.court_options_frame.setVisible(True)
+        self.court_decision_btn.setVisible(True)
+        self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
+    
+    def update_court_meeting(self, meeting_data):
+        """更新朝会信息"""
+        self.current_meeting_data = meeting_data
+        
+        # 清空现有选项
+        self._clear_court_options()
+        
+        # 显示朝会标题
+        if meeting_data.get("type") == "monthly":
+            title = "月度朝会"
+            if "topics" in meeting_data:
+                total_topics = len(meeting_data["topics"])
+                current_index = meeting_data.get("current_topic_index", 0)
+                topic = meeting_data["topics"][current_index]
+                title += f" - 议题 {current_index + 1}/{total_topics}"
+        else:
+            title = "紧急朝会"
+        
+        self.court_title_label.setText(title)
+        
+        # 构建朝会信息文本
+        info_text = ""
+        
+        # 添加时间信息
+        year = meeting_data.get("year", 190)
+        season = meeting_data.get("season", 1)
+        season_names = {1: "春", 2: "夏", 3: "秋", 4: "冬"}
+        season_name = season_names.get(season, "春")
+        info_text += f"<p><b>时间:</b> {year}年 {season_name}</p>"
+        
+        # 添加议题信息
+        if "topic" in meeting_data:
+            topic = meeting_data["topic"]
+            info_text += f"<h3>{topic.get('title', '未知议题')}</h3>"
+            info_text += f"<p><b>描述:</b> {topic.get('description', '')}</p>"
+            info_text += f"<p><b>背景:</b> {topic.get('background', '')}</p>"
+            
+            # 添加选项
+            if "options" in topic:
+                info_text += "<p><b>选项:</b></p>"
+                self._add_court_options(topic["options"])
+        
+        # 更新左侧主要信息区域
+        self.court_info_area.setText(info_text)
+        
+        # 更新右侧信息面板的提示信息
+        self._show_court_hints(meeting_data)
+        
+        # 显示选项区域和决策按钮
+        self.court_options_frame.setVisible(True)
+        self.court_decision_btn.setVisible(True)
+        self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
+    
+    def _show_court_hints(self, meeting_data):
+        """在右侧信息面板显示朝会提示信息"""
+        # 找到信息面板中的标签并更新内容
+        for i in range(self.info_panel.layout().count()):
+            widget = self.info_panel.layout().itemAt(i).widget()
+            if isinstance(widget, QLabel) and widget.text() == "点击宫殿或人物查看详细信息":
+                hints_text = "<b>朝会提示</b><br><br>"
+                
+                # 添加基本提示
+                hints_text += "• 请仔细阅读议题描述和背景<br>"
+                hints_text += "• 考虑每个选项的利弊<br>"
+                hints_text += "• 选择一个选项后点击\"做出决策\"<br><br>"
+                
+                # 添加当前议题提示
+                if "topic" in meeting_data:
+                    topic = meeting_data["topic"]
+                    hints_text += f"<b>当前议题:</b> {topic.get('title', '未知议题')}<br><br>"
+                    
+                    # 添加选项简要说明
+                    if "options" in topic:
+                        hints_text += "<b>选项概要:</b><br>"
+                        for i, option in enumerate(topic["options"]):
+                            option_text = option.get("text", f"选项 {i+1}")
+                            hints_text += f"• {option_text}<br>"
+                
+                widget.setText(hints_text)
+                break
+    
+    def show_court_meeting_complete(self):
+        """显示朝会完成信息"""
+        self.court_meeting_active = False
+        
+        # 构建完成信息文本
+        info_text = "<h3>朝会完成</h3>"
+        info_text += "<p>所有议题已讨论完毕，朝会结束。</p>"
+        
+        # 更新左侧主要信息区域
+        self.court_info_area.setText(info_text)
+        
+        # 隐藏选项区域和决策按钮
+        self.court_options_frame.setVisible(False)
+        self.court_decision_btn.setVisible(False)
+        
+        # 在右侧信息面板显示完成信息
+        self._show_court_complete_hints()
+        
+        # 3秒后恢复宫殿地图显示
+        QTimer.singleShot(3000, self._restore_main_content)
+    
+    def _show_court_complete_hints(self):
+        """在右侧信息面板显示朝会完成提示"""
+        # 找到信息面板中的标签并更新内容
+        for i in range(self.info_panel.layout().count()):
+            widget = self.info_panel.layout().itemAt(i).widget()
+            if isinstance(widget, QLabel) and widget.text().startswith("<b>朝会提示</b>"):
+                hints_text = "<b>朝会已完成</b><br><br>"
+                hints_text += "• 所有议题已处理完毕<br>"
+                hints_text += "• 3秒后返回主界面<br>"
+                hints_text += "• 您可以继续进行其他操作"
+                
+                widget.setText(hints_text)
+                break
+    
+    def _restore_main_content(self):
+        """恢复主界面内容"""
+        # 隐藏朝会区域，显示宫殿地图
+        self.court_meeting_area.setVisible(False)
+        self.palace_map.setVisible(True)
+        
+        # 恢复右侧信息面板的默认内容
+        for i in range(self.info_panel.layout().count()):
+            widget = self.info_panel.layout().itemAt(i).widget()
+            if isinstance(widget, QLabel):
+                text = widget.text()
+                if text.startswith("<b>朝会已完成</b>"):
+                    widget.setText("点击宫殿或人物查看详细信息")
+                    break
+        
+        # 朝会结束后，发出信号通知主窗口恢复游戏时间
+        self.court_meeting_completed.emit()
+    
+    def _add_court_options(self, options):
+        """添加朝会选项"""
+        # 确保option_buttons初始化为None
+        self.option_buttons = None
+        
+        # 创建选项按钮组
+        self.option_buttons = QButtonGroup(self)
+        self.option_buttons.setExclusive(True)
+        
+        # 为每个选项创建单选按钮
+        for i, option in enumerate(options):
+            option_id = option.get("id", f"option_{i}")
+            option_text = option.get("title", option.get("text", f"选项 {i+1}"))
+            
+            # 创建单选按钮
+            radio_btn = QRadioButton(option_text)
+            radio_btn.setProperty("option_id", option_id)
+            radio_btn.toggled.connect(self._on_option_selected)
+            
+            # 添加到按钮组
+            self.option_buttons.addButton(radio_btn, i)
+            
+            # 添加到选项布局
+            self.court_options_layout.addWidget(radio_btn)
+    
+    def _on_option_selected(self, checked):
+        """处理选项选择"""
+        if checked:
+            # 启用决策按钮
+            self.court_decision_btn.setEnabled(True)
+    
+    def _clear_court_options(self):
+        """清空朝会选项"""
+        # 清空选项布局中的所有控件
+        while self.court_options_layout.count():
+            child = self.court_options_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+        
+        # 重置选项按钮组
+        self.option_buttons = None
+    
+    def _on_court_decision(self):
+        """处理朝会决策"""
+        if not self.court_meeting_active:
+            return
+        
+        # 获取选中的选项
+        selected_option_id = None
+        if hasattr(self, 'option_buttons'):
+            checked_button = self.option_buttons.checkedButton()
+            if checked_button:
+                selected_option_id = checked_button.property("option_id")
+        
+        # 发射决策信号
+        if selected_option_id:
+            self.court_decision.emit(selected_option_id)
+        else:
+            # 显示错误消息
+            self.status_msg_label.setText("请先选择一个选项")
+    
+
     
     def _on_window_resize(self, event):
         """处理窗口大小改变事件"""
