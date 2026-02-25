@@ -21,6 +21,7 @@ class GameModel:
                 "year": 190,  # 起始年份
                 "month": 1,   # 月份 (1-12)
                 "day": 1,     # 日期 (1-30)
+                "season": 1,  # 季节 (1-4)，按季度计算
                 "turn": 1,    # 回合数
                 "current_faction": "wei",  # 当前势力
                 "paused": False
@@ -112,6 +113,9 @@ class GameModel:
         
         self.game_data["game_info"]["day"] = day
         self.game_data["game_info"]["month"] = month
+        # 更新季度（季节）信息，每3个月为一季
+        season = ((month - 1) // 3) + 1
+        self.game_data["game_info"]["season"] = season
         self.game_data["game_info"]["year"] = year
         self.game_data["game_info"]["turn"] += 1
     

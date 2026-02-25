@@ -139,9 +139,10 @@ class TerrainRenderer:
         if pixmap is None:
             return None
         
-        # 创建地形项
+        # 创建地形项，将 tile 中心对齐到屏幕坐标（偏移半格）
         item = QGraphicsPixmapItem(pixmap)
-        item.setPos(screen_x, screen_y)
+        item.setPos(screen_x - self.projection.x_factor,
+                    screen_y - self.projection.y_factor)
         
         # 存储网格坐标，用于后续交互
         item.setData(0, (grid_x, grid_y))

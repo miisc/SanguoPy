@@ -32,6 +32,7 @@ class CourtMeetingSystem(QObject):
                 "title": "增税政策",
                 "description": "国库紧张，是否应该提高税率以增加收入？",
                 "background": "由于连年征战，国库空虚，急需增加财政收入。",
+                "has_location": False,
                 "options": [
                     {
                         "id": "increase_tax",
@@ -67,6 +68,8 @@ class CourtMeetingSystem(QObject):
                 "title": "军事扩张",
                 "description": "是否应该扩大军队规模以增强国防实力？",
                 "background": "邻国频繁调动军队，边境安全受到威胁。",
+                "related_city": "luoyang",
+                "has_location": True,
                 "options": [
                     {
                         "id": "expand_army",
@@ -103,6 +106,8 @@ class CourtMeetingSystem(QObject):
                 "title": "基础设施建设",
                 "description": "是否应该投资基础设施建设以促进经济发展？",
                 "background": "国内基础设施落后，影响经济发展和民生改善。",
+                "related_city": "chengdu",
+                "has_location": True,
                 "options": [
                     {
                         "id": "major_investment",
@@ -140,6 +145,7 @@ class CourtMeetingSystem(QObject):
                 "title": "农业发展",
                 "description": "是否应该投资农业发展以提高粮食产量？",
                 "background": "今年收成不佳，粮食储备不足，需要制定农业发展政策。",
+                "has_location": False,
                 "options": [
                     {
                         "id": "irrigation_project",
@@ -178,6 +184,7 @@ class CourtMeetingSystem(QObject):
                 "title": "贸易政策",
                 "description": "是否应该开放对外贸易以增加收入？",
                 "background": "周边国家商品丰富，开放贸易可增加收入，但也带来风险。",
+                "has_location": False,
                 "options": [
                     {
                         "id": "open_trade",
@@ -216,6 +223,7 @@ class CourtMeetingSystem(QObject):
                 "title": "教育改革",
                 "description": "是否应该投资教育以培养人才？",
                 "background": "国家缺乏治理人才，需要重视教育培养。",
+                "has_location": False,
                 "options": [
                     {
                         "id": "establish_schools",
@@ -245,6 +253,45 @@ class CourtMeetingSystem(QObject):
                             "gold": -1500,
                             "tech": 3,
                             "people": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "id": "pass_garrison",
+                "title": "关隘驻守",
+                "description": "虎牢关地处要冲，近日探报显示敌方有异动，是否增兵驻守？",
+                "background": "虎牢关扼守中原咽喉，地势险要，历来为兵家必争之地。斥候来报，关外出现大队敌军旗帜，形势紧迫。",
+                "has_location": True,
+                "related_position": [27, 26],
+                "options": [
+                    {
+                        "id": "reinforce_pass",
+                        "title": "增兵驻守",
+                        "description": "从各处调兵，大规模增援虎牢关守军，严阵以待。",
+                        "effects": {
+                            "soldiers": -3000,
+                            "gold": -2000,
+                            "defense": 8
+                        }
+                    },
+                    {
+                        "id": "hold_current",
+                        "title": "维持现状",
+                        "description": "关隘现有守军尚可应对，静观其变，待敌意图明朗再行定夺。",
+                        "effects": {
+                            "defense": 2,
+                            "gold": 0
+                        }
+                    },
+                    {
+                        "id": "send_scouts",
+                        "title": "遣使侦察",
+                        "description": "派出精锐斥候深入敌境，摸清虚实后再作部署，避免劳师动众。",
+                        "effects": {
+                            "gold": -500,
+                            "defense": 1,
+                            "diplomacy": 1
                         }
                     }
                 ]
@@ -542,6 +589,7 @@ class CourtMeetingSystem(QObject):
                 "title": "月度财政报告",
                 "description": "本月财政收入与支出情况如何？是否需要调整财政政策？",
                 "background": "每月初，需要审查上月财政情况，决定本月财政政策。",
+                "has_location": False,
                 "options": [
                     {
                         "id": "increase_tax",
@@ -568,6 +616,8 @@ class CourtMeetingSystem(QObject):
                 "title": "月度军事报告",
                 "description": "本月军事训练与防务情况如何？是否需要加强军事力量？",
                 "background": "每月初，需要审查军事状况，决定本月军事政策。",
+                "related_city": "luoyang",
+                "has_location": True,
                 "options": [
                     {
                         "id": "increase_military",
@@ -603,6 +653,8 @@ class CourtMeetingSystem(QObject):
                 "title": "自然灾害",
                 "description": "境内发生自然灾害，需要紧急应对！",
                 "background": "突如其来的自然灾害威胁着民众的生命财产安全，需要立即采取行动。",
+                "related_position": [20, 12],
+                "has_location": True,
                 "options": [
                     {
                         "id": "emergency_relief",
@@ -629,6 +681,8 @@ class CourtMeetingSystem(QObject):
                 "title": "边境警报",
                 "description": "边境发现敌军活动，需要紧急应对！",
                 "background": "边境哨所传来紧急军情，发现敌军大规模调动，可能威胁边境安全。",
+                "related_city": "luoyang",
+                "has_location": True,
                 "options": [
                     {
                         "id": "immediate_defense",

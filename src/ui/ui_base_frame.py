@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                              QGraphicsScene, QGraphicsPixmapItem, QButtonGroup, QRadioButton)
 from PyQt5.QtCore import Qt, pyqtSignal, QSize, QRectF, QTimer
 from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
+from ui.court_map_widget import CourtTopDownMapWidget
 
 
 class UIBaseFrame(QWidget):
@@ -27,7 +28,7 @@ class UIBaseFrame(QWidget):
         super().__init__(parent)
         
         # 设置基本属性
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(700, 450)
         
         # UI组件
         self.main_layout = None
@@ -46,6 +47,8 @@ class UIBaseFrame(QWidget):
         self.court_meeting_active = False
         self.current_meeting_data = None
         self.option_buttons = None
+        # 地图视图（在朝会区域下方嵌入）
+        self.court_map_view = None
         
         # 初始化UI
         self._init_ui()
@@ -125,101 +128,75 @@ class UIBaseFrame(QWidget):
         
         return frame
     
-    def setup_speed_controls(self, pause_callback, normal_callback, fast_callback, fastest_callback, ultra_callback=None):
+    def setup_speed_controls(self, pause_callback, normal_callback, fast_x3_callback):
         """设置速度控制按钮的回调函数"""
         if hasattr(self, 'pause_btn'):
             self.pause_btn.clicked.connect(pause_callback)
         if hasattr(self, 'normal_speed_btn'):
             self.normal_speed_btn.clicked.connect(normal_callback)
-        if hasattr(self, 'fast_speed_btn'):
-            self.fast_speed_btn.clicked.connect(fast_callback)
-        if hasattr(self, 'fastest_speed_btn'):
-            self.fastest_speed_btn.clicked.connect(fastest_callback)
-        if hasattr(self, 'ultra_speed_btn') and ultra_callback:
-            self.ultra_speed_btn.clicked.connect(ultra_callback)
+        if hasattr(self, 'fast_x3_btn'):
+            self.fast_x3_btn.clicked.connect(fast_x3_callback)
     
     def update_speed_buttons(self, current_speed):
-        """更新速度按钮状态"""
-        # 重置所有按钮样式
-        if hasattr(self, 'pause_btn'):
-            self.pause_btn.setStyleSheet("")
-        if hasattr(self, 'normal_speed_btn'):
-            self.normal_speed_btn.setStyleSheet("")
-        if hasattr(self, 'fast_speed_btn'):
-            self.fast_speed_btn.setStyleSheet("")
-        if hasattr(self, 'fastest_speed_btn'):
-            self.fastest_speed_btn.setStyleSheet("")
-        if hasattr(self, 'ultra_speed_btn'):
-            self.ultra_speed_btn.setStyleSheet("")
+        """更新速度按钮高亮状态（不改尺寸，仅改背景色）"""
+        ACTIVE_COLORS = {
+            "pause":  "background-color: #FF6B6B;",
+            "normal": "background-color: #4ECDC4;",
+            "fast":   "background-color: #FFD700;",
+        }
+        DEFAULT = ""  # 恢复默认样式，尺寸由 setFixedSize 控制
         
-        # 高亮当前速度按钮
-        if current_speed == "pause" and hasattr(self, 'pause_btn'):
-            self.pause_btn.setStyleSheet("background-color: #FF6B6B;")
-        elif current_speed == "normal" and hasattr(self, 'normal_speed_btn'):
-            self.normal_speed_btn.setStyleSheet("background-color: #4ECDC4;")
-        elif current_speed == "fast" and hasattr(self, 'fast_speed_btn'):
-            self.fast_speed_btn.setStyleSheet("background-color: #45B7D1;")
-        elif current_speed == "fastest" and hasattr(self, 'fastest_speed_btn'):
-            self.fastest_speed_btn.setStyleSheet("background-color: #96CEB4;")
-        elif current_speed == "ultra" and hasattr(self, 'ultra_speed_btn'):
-            self.ultra_speed_btn.setStyleSheet("background-color: #FFD700;")  # 金色背景表示超快速度
+        if hasattr(self, 'pause_btn'):
+            self.pause_btn.setStyleSheet(ACTIVE_COLORS["pause"] if current_speed == "pause" else DEFAULT)
+        if hasattr(self, 'normal_speed_btn'):
+            self.normal_speed_btn.setStyleSheet(ACTIVE_COLORS["normal"] if current_speed == "normal" else DEFAULT)
+        if hasattr(self, 'fast_x3_btn'):
+            self.fast_x3_btn.setStyleSheet(ACTIVE_COLORS["fast"] if current_speed in ("fast", "fastest", "ultra") else DEFAULT)
     
     def _create_bottom_bar(self):
         """创建底部控制栏"""
         frame = QFrame()
+        frame.setObjectName("bottom_bar")  # 用于调色时排除其内按钮
         frame.setFrameStyle(QFrame.Box)
-        frame.setFixedHeight(60)  # 使用固定高度，确保在窗口缩放时保持一致
+        frame.setFixedHeight(48)
         
         layout = QHBoxLayout(frame)
-        layout.setContentsMargins(10, 5, 10, 5)  # 添加边距
+        layout.setContentsMargins(8, 4, 8, 4)
+        layout.setSpacing(6)
+        
+        BTN_W, BTN_H = 90, 32  # 统一按钮尺寸
         
         # 添加按钮
         save_game_btn = QPushButton("保存游戏")
         save_game_btn.clicked.connect(self._on_save_game)
-        save_game_btn.setMinimumSize(100, 40)  # 设置最小尺寸
+        save_game_btn.setFixedSize(BTN_W, BTN_H)
         layout.addWidget(save_game_btn)
         
         load_game_btn = QPushButton("加载游戏")
         load_game_btn.clicked.connect(self._on_load_game)
-        load_game_btn.setMinimumSize(100, 40)  # 设置最小尺寸
+        load_game_btn.setFixedSize(BTN_W, BTN_H)
         layout.addWidget(load_game_btn)
         
         layout.addStretch()
         
-        # 添加游戏速度控制按钮
-        speed_layout = QHBoxLayout()
-        speed_layout.setSpacing(5)  # 添加按钮间距
-        
-        # 暂停按钮
+        # 速度控制按钮（仅保留：暂停 / 正常 / 快速×3）
         self.pause_btn = QPushButton("暂停")
-        self.pause_btn.setMinimumSize(60, 30)  # 设置最小尺寸
-        speed_layout.addWidget(self.pause_btn)
+        self.pause_btn.setFixedSize(BTN_W, BTN_H)
+        layout.addWidget(self.pause_btn)
         
-        # 正常速度按钮
         self.normal_speed_btn = QPushButton("正常")
-        self.normal_speed_btn.setMinimumSize(60, 30)  # 设置最小尺寸
-        speed_layout.addWidget(self.normal_speed_btn)
+        self.normal_speed_btn.setFixedSize(BTN_W, BTN_H)
+        layout.addWidget(self.normal_speed_btn)
         
-        # 加速按钮
-        self.fast_speed_btn = QPushButton("加速")
-        self.fast_speed_btn.setMinimumSize(60, 30)  # 设置最小尺寸
-        speed_layout.addWidget(self.fast_speed_btn)
+        self.fast_x3_btn = QPushButton("快速X3")
+        self.fast_x3_btn.setFixedSize(BTN_W, BTN_H)
+        layout.addWidget(self.fast_x3_btn)
         
-        # 最快速度按钮
-        self.fastest_speed_btn = QPushButton("最快")
-        self.fastest_speed_btn.setMinimumSize(60, 30)  # 设置最小尺寸
-        speed_layout.addWidget(self.fastest_speed_btn)
-        
-        # 超快速度按钮
-        self.ultra_speed_btn = QPushButton("超快")
-        self.ultra_speed_btn.setMinimumSize(60, 30)  # 设置最小尺寸
-        speed_layout.addWidget(self.ultra_speed_btn)
-        
-        layout.addLayout(speed_layout)
+        layout.addStretch()
         
         help_btn = QPushButton("帮助")
         help_btn.clicked.connect(self._on_help)
-        help_btn.setMinimumSize(100, 40)  # 设置最小尺寸
+        help_btn.setFixedSize(BTN_W, BTN_H)
         layout.addWidget(help_btn)
         
         return frame
@@ -316,7 +293,7 @@ class UIBaseFrame(QWidget):
         """创建左侧主要信息区域"""
         frame = QFrame()
         frame.setFrameStyle(QFrame.Box)
-        frame.setMinimumSize(600, 400)  # 设置最小尺寸
+        frame.setMinimumSize(500, 300)  # 设置最小尺寸
         
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(10, 10, 10, 10)  # 添加边距
@@ -352,8 +329,17 @@ class UIBaseFrame(QWidget):
         self.court_info_area = QLabel()
         self.court_info_area.setAlignment(Qt.AlignTop)
         self.court_info_area.setWordWrap(True)
-        self.court_info_area.setMinimumHeight(200)
-        layout.addWidget(self.court_info_area, 1)
+        self.court_info_area.setMinimumHeight(80)
+        layout.addWidget(self.court_info_area, 2)
+
+        # 嵌入2D正视图地图（显示城市/关隘/道路，默认隐藏）
+        try:
+            self.court_map_view = CourtTopDownMapWidget()
+            self.court_map_view.setVisible(False)
+            self.court_map_view.setMinimumHeight(100)
+            layout.addWidget(self.court_map_view, 5)
+        except Exception:
+            self.court_map_view = None
         
         # 朝会选项区域
         self.court_options_frame = QFrame()
@@ -364,16 +350,24 @@ class UIBaseFrame(QWidget):
         # 朝会决策按钮
         self.court_decision_btn = QPushButton("做出决策")
         self.court_decision_btn.clicked.connect(self._on_court_decision)
+        self.court_decision_btn.setFixedSize(90, 32)
         self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
-        layout.addWidget(self.court_decision_btn)
-        
+        layout.addWidget(self.court_decision_btn, 0, Qt.AlignLeft)
+
+        # 退朝按钮（所有议题处理完后显示，点击返回主界面并恢复时间）
+        self.dismiss_btn = QPushButton("退朝")
+        self.dismiss_btn.clicked.connect(self._restore_main_content)
+        self.dismiss_btn.setFixedSize(90, 32)
+        self.dismiss_btn.setVisible(False)
+        layout.addWidget(self.dismiss_btn, 0, Qt.AlignLeft)
+
         return frame
     
     def _create_palace_map(self):
         """创建宫殿地图"""
         frame = QFrame()
         frame.setFrameStyle(QFrame.Box)
-        frame.setMinimumSize(600, 400)  # 减小最小尺寸，更适应小窗口
+        frame.setMinimumSize(500, 300)  # 减小最小尺寸，更适应小窗口
         
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(10, 10, 10, 10)  # 添加边距
@@ -393,36 +387,36 @@ class UIBaseFrame(QWidget):
         # 宣室殿按钮
         xuanshi_btn = QPushButton("宣室殿")
         xuanshi_btn.clicked.connect(self._on_xuanshi_palace_clicked)
-        xuanshi_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
-        xuanshi_btn.setToolTip("处理紧急朝会，应对突发事件")  # 添加工具提示
+        xuanshi_btn.setFixedSize(90, 32)
+        xuanshi_btn.setToolTip("处理紧急朝会，应对突发事件")
         palace_layout.addWidget(xuanshi_btn)
         
         # 承明殿按钮
         chengming_btn = QPushButton("承明殿")
         chengming_btn.clicked.connect(self._on_chengming_palace_clicked)
-        chengming_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
-        chengming_btn.setToolTip("处理每月初一的大朝会")  # 添加工具提示
+        chengming_btn.setFixedSize(90, 32)
+        chengming_btn.setToolTip("处理每月初一的大朝会")
         palace_layout.addWidget(chengming_btn)
         
         # 添加分隔线
         separator = QFrame()
         separator.setFrameShape(QFrame.VLine)
         separator.setFrameShadow(QFrame.Sunken)
-        separator.setStyleSheet("color: #8B4513;")  # 深棕色分隔线
+        separator.setStyleSheet("color: #8B4513;")
         palace_layout.addWidget(separator)
         
         # 椒房殿按钮
         jiaofang_btn = QPushButton("椒房殿")
         jiaofang_btn.clicked.connect(lambda: self.palace_clicked.emit("椒房殿"))
-        jiaofang_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
-        jiaofang_btn.setToolTip("后宫管理")  # 添加工具提示
+        jiaofang_btn.setFixedSize(90, 32)
+        jiaofang_btn.setToolTip("后宫管理")
         palace_layout.addWidget(jiaofang_btn)
         
         # 长乐宫按钮
         changle_btn = QPushButton("长乐宫")
         changle_btn.clicked.connect(lambda: self.palace_clicked.emit("长乐宫"))
-        changle_btn.setMinimumSize(120, 60)  # 增加按钮尺寸
-        changle_btn.setToolTip("皇室事务")  # 添加工具提示
+        changle_btn.setFixedSize(90, 32)
+        changle_btn.setToolTip("皇室事务")
         palace_layout.addWidget(changle_btn)
         
         layout.addLayout(palace_layout, 1)  # 设置伸缩因子，占据大部分空间
@@ -436,86 +430,8 @@ class UIBaseFrame(QWidget):
     
     def _on_chengming_palace_clicked(self):
         """处理承明殿点击事件"""
-        # 发射宫殿点击信号
+        # 只发射信号，由 WeiyangMainWindow 负责调用 get_monthly_court_data 并展示真实朝会数据
         self.palace_clicked.emit("承明殿")
-        
-        # 显示大朝会
-        court_meeting_data = {
-            "type": "monthly",
-            "year": 190,
-            "season": 1,
-            "current_topic_index": 0,
-            "topics": [
-                {
-                    "title": "春耕筹备",
-                    "description": "春季到来，需要筹备春耕事宜。",
-                    "background": "今年气候适宜，是个丰收的好兆头，但需要足够的人力和物力支持。",
-                    "options": [
-                        {
-                            "id": "option_1",
-                            "text": "增加农田开垦",
-                            "effect": "消耗金钱 5000，粮食产量 +20%"
-                        },
-                        {
-                            "id": "option_2",
-                            "text": "维持现状",
-                            "effect": "无消耗，粮食产量不变"
-                        },
-                        {
-                            "id": "option_3",
-                            "text": "减少农业投入",
-                            "effect": "节省金钱 3000，粮食产量 -10%，民心 -5"
-                        }
-                    ]
-                },
-                {
-                    "title": "军队整编",
-                    "description": "需要对现有军队进行整编。",
-                    "background": "军队士气低落，装备陈旧，需要进行改革。",
-                    "options": [
-                        {
-                            "id": "option_1",
-                            "text": "全面整编",
-                            "effect": "消耗金钱 8000，兵力 +5000，军心 +15"
-                        },
-                        {
-                            "id": "option_2",
-                            "text": "部分调整",
-                            "effect": "消耗金钱 3000，军心 +5"
-                        },
-                        {
-                            "id": "option_3",
-                            "text": "暂不整编",
-                            "effect": "无消耗，军心 -5"
-                        }
-                    ]
-                }
-            ],
-            "topic": {
-                "title": "春耕筹备",
-                "description": "春季到来，需要筹备春耕事宜。",
-                "background": "今年气候适宜，是个丰收的好兆头，但需要足够的人力和物力支持。",
-                "options": [
-                    {
-                        "id": "option_1",
-                        "text": "增加农田开垦",
-                        "effect": "消耗金钱 5000，粮食产量 +20%"
-                    },
-                    {
-                        "id": "option_2",
-                        "text": "维持现状",
-                        "effect": "无消耗，粮食产量不变"
-                    },
-                    {
-                        "id": "option_3",
-                        "text": "减少农业投入",
-                        "effect": "节省金钱 3000，粮食产量 -10%，民心 -5"
-                    }
-                ]
-            }
-        }
-        
-        self.show_court_meeting(court_meeting_data)
     
     def _apply_base_style(self):
         """应用基础样式"""
@@ -620,7 +536,6 @@ class UIBaseFrame(QWidget):
             
             # 添加选项
             if "options" in topic:
-                info_text += "<p><b>选项:</b></p>"
                 self._add_court_options(topic["options"])
         
         # 更新信息标签
@@ -628,12 +543,27 @@ class UIBaseFrame(QWidget):
         
         # 在右侧信息面板显示朝会提示信息
         self._show_court_hints(meeting_data)
+
+        # 显示规则：仅当议题存在 related_position（格子坐标）时才显示地图并居中；否则隐藏。
+        topic = meeting_data.get("topic") if meeting_data else None
+        related_pos = topic.get("related_position") if topic else None
+        has_grid_pos = isinstance(related_pos, (list, tuple)) and len(related_pos) >= 2
+
+        if self.court_map_view:
+            if has_grid_pos:
+                self.court_map_view.setVisible(True)
+                self.court_map_view.center_on_grid(
+                    int(related_pos[0]), int(related_pos[1]), view_range=250)
+            else:
+                self.court_map_view.setVisible(False)
+                self.court_map_view.reset()
         
-        # 显示选项区域和决策按钮
+        # 显示选项区域和决策按钮；确保退朝按钮隐藏
         self.court_options_frame.setVisible(True)
         self.court_decision_btn.setVisible(True)
         self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
-    
+        self.dismiss_btn.setVisible(False)
+
     def update_court_meeting(self, meeting_data):
         """更新朝会信息"""
         self.current_meeting_data = meeting_data
@@ -673,7 +603,6 @@ class UIBaseFrame(QWidget):
             
             # 添加选项
             if "options" in topic:
-                info_text += "<p><b>选项:</b></p>"
                 self._add_court_options(topic["options"])
         
         # 更新左侧主要信息区域
@@ -682,11 +611,26 @@ class UIBaseFrame(QWidget):
         # 更新右侧信息面板的提示信息
         self._show_court_hints(meeting_data)
         
-        # 显示选项区域和决策按钮
+        # 同步更新：仅当议题存在 related_position（格子坐标）时才显示地图并居中；否则隐藏。
+        topic = meeting_data.get("topic") if meeting_data else None
+        related_pos = topic.get("related_position") if topic else None
+        has_grid_pos = isinstance(related_pos, (list, tuple)) and len(related_pos) >= 2
+
+        if self.court_map_view:
+            if has_grid_pos:
+                self.court_map_view.setVisible(True)
+                self.court_map_view.center_on_grid(
+                    int(related_pos[0]), int(related_pos[1]), view_range=250)
+            else:
+                self.court_map_view.setVisible(False)
+                self.court_map_view.reset()
+        
+        # 显示选项区域和决策按钮；确保退朝按钮隐藏
         self.court_options_frame.setVisible(True)
         self.court_decision_btn.setVisible(True)
         self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
-    
+        self.dismiss_btn.setVisible(False)
+
     def _show_court_hints(self, meeting_data):
         """在右侧信息面板显示朝会提示信息"""
         # 找到信息面板中的标签并更新内容
@@ -718,23 +662,25 @@ class UIBaseFrame(QWidget):
     def show_court_meeting_complete(self):
         """显示朝会完成信息"""
         self.court_meeting_active = False
-        
+
         # 构建完成信息文本
         info_text = "<h3>朝会完成</h3>"
         info_text += "<p>所有议题已讨论完毕，朝会结束。</p>"
-        
+        info_text += "<p>请点击下方<b>退朝</b>按钮返回主界面，时间将自动恢复推进。</p>"
+
         # 更新左侧主要信息区域
         self.court_info_area.setText(info_text)
-        
-        # 隐藏选项区域和决策按钮
+
+        # 隐藏地图、选项和决策按钮，显示退朝按钮
+        if self.court_map_view:
+            self.court_map_view.setVisible(False)
+            self.court_map_view.reset()
         self.court_options_frame.setVisible(False)
         self.court_decision_btn.setVisible(False)
-        
+        self.dismiss_btn.setVisible(True)
+
         # 在右侧信息面板显示完成信息
         self._show_court_complete_hints()
-        
-        # 3秒后恢复宫殿地图显示
-        QTimer.singleShot(3000, self._restore_main_content)
     
     def _show_court_complete_hints(self):
         """在右侧信息面板显示朝会完成提示"""
@@ -745,13 +691,15 @@ class UIBaseFrame(QWidget):
                 hints_text = "<b>朝会已完成</b><br><br>"
                 hints_text += "• 所有议题已处理完毕<br>"
                 hints_text += "• 3秒后返回主界面<br>"
-                hints_text += "• 您可以继续进行其他操作"
-                
+                hints_text += '• 点击"退朝"按钮返回主界面'
+
                 widget.setText(hints_text)
                 break
-    
+
     def _restore_main_content(self):
         """恢复主界面内容"""
+        # 隐藏退朝按钮
+        self.dismiss_btn.setVisible(False)
         # 隐藏朝会区域，显示宫殿地图
         self.court_meeting_area.setVisible(False)
         self.palace_map.setVisible(True)

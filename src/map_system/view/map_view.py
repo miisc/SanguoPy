@@ -131,21 +131,28 @@ class MapView(QGraphicsView):
     
     def adjust_view_size(self):
         """调整视图大小以适应地图"""
-        # 计算地图的屏幕边界
-        left, top, right, bottom = self.projection.get_tile_bounds(0, 0)
-        map_left, map_top, map_right, map_bottom = self.projection.get_tile_bounds(
-            self.map_grid.width - 1, self.map_grid.height - 1
-        )
-        
-        # 计算地图的屏幕尺寸
-        map_width = map_right - map_left
-        map_height = map_bottom - map_top
-        
-        # 设置场景矩形
-        self.scene.setSceneRect(map_left, map_top, map_width, map_height)
-        
-        # 居中显示地图
-        self.centerOn(map_width / 2, map_height / 2)
+        w = self.map_grid.width
+        h = self.map_grid.height
+        hx = self.projection.x_factor  # 32
+        hy = self.projection.y_factor  # 16
+
+        # 等距地图的四个极值顶点：
+        #   最左：(0, h-1)，最右：(w-1, 0)，最上：(0, 0)，最下：(w-1, h-1)
+        left_x,  _      = self.projection.grid_to_screen(0,     h - 1)
+        right_x, _      = self.projection.grid_to_screen(w - 1, 0)
+        _,       top_y  = self.projection.grid_to_screen(0,     0)
+        _,       bot_y  = self.projection.grid_to_screen(w - 1, h - 1)
+
+        scene_left   = left_x  - hx
+        scene_top    = top_y   - hy
+        scene_width  = (right_x + hx) - scene_left
+        scene_height = (bot_y   + hy) - scene_top
+
+        self.scene.setSceneRect(scene_left, scene_top, scene_width, scene_height)
+
+        # 居中显示地图中心
+        mid_x, mid_y = self.projection.grid_to_screen((w - 1) / 2, (h - 1) / 2)
+        self.centerOn(mid_x, mid_y)
     
     def wheelEvent(self, event: QWheelEvent):
         """鼠标滚轮缩放

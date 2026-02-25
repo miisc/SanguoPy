@@ -8,7 +8,7 @@
 
 import os
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLabel, QPushButton, QStatusBar, QMenuBar, QMenu,
+                             QLabel, QPushButton, QMenuBar, QMenu,
                              QAction, QMessageBox, QDialog, QFormLayout, QFrame)
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon, QFont
@@ -150,12 +150,20 @@ class WeiyangMainWindow(QMainWindow):
         # 初始化游戏时间
         self._init_game_timer()
         
+        # 将 game_controller 注入到 UI 框架，以便 UI 可以访问城池等数据并控制地图
+        self.map_frame.game_controller = self.game_controller
+
         # 连接游戏控制器信号
         self.game_controller.time_advanced.connect(self._on_time_advanced)
         self.game_controller.resources_updated.connect(self._on_resources_updated)
         self.game_controller.game_updated.connect(self._on_game_updated)
         self.game_controller.monthly_court_due.connect(self._on_monthly_court_due)
         self.game_controller.court_meeting_system.meeting_completed.connect(self._on_court_meeting_completed)
+        # 监听朝会开始信号以便触发地图聚焦等联动
+        try:
+            self.game_controller.court_meeting_system.meeting_started.connect(self._on_court_meeting_started)
+        except Exception:
+            pass
         
         # 连接UI框架信号
         self.map_frame.court_decision.connect(self._on_court_decision)
@@ -175,8 +183,8 @@ class WeiyangMainWindow(QMainWindow):
         
         # 创建主布局
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(10, 10, 10, 5)  # 添加边距，底部减少边距为状态栏留空间
-        main_layout.setSpacing(10)  # 添加间距
+        main_layout.setContentsMargins(10, 5, 10, 5)  # 减小边距，避免底部按钮被遮挡
+        main_layout.setSpacing(0)
         
         # 创建未央宫地图框架
         self.map_frame = UIBaseFrame()
@@ -186,8 +194,6 @@ class WeiyangMainWindow(QMainWindow):
         self.map_frame.setup_speed_controls(
             self._pause_game,
             self._set_normal_speed,
-            self._set_fast_speed,
-            self._set_fastest_speed,
             self._set_ultra_speed
         )
         
@@ -231,13 +237,16 @@ class WeiyangMainWindow(QMainWindow):
         help_menu.addAction(about_action)
     
     def _init_status_bar(self):
-        """初始化状态栏"""
-        self.status_bar = QStatusBar()
-        self.status_bar.setSizeGripEnabled(False)  # 禁用大小调整手柄
-        self.status_bar.setMaximumHeight(25)  # 设置最大高度
-        self.status_bar.setMinimumHeight(20)  # 设置最小高度
-        self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("准备就绪")
+        """不再使用 QStatusBar（占用窗口高度且会递挡底部按钮），消息直接写入信息面板。"""
+        pass
+
+    def _show_status(self, msg: str):
+        """将状态消息显示到左侧信息面板的 status_msg_label。"""
+        try:
+            if hasattr(self, 'map_frame') and hasattr(self.map_frame, 'status_msg_label'):
+                self.map_frame.status_msg_label.setText(msg)
+        except Exception:
+            pass
     
     def _init_game_timer(self):
         """初始化游戏定时器"""
@@ -294,8 +303,9 @@ class WeiyangMainWindow(QMainWindow):
         if meeting_data:
             # 在信息面板显示朝会
             self.map_frame.show_court_meeting(meeting_data)
+            # 若会议包含相关位置，确保地图聚焦（map_frame 会处理）
             # 更新状态消息
-            self.status_bar.showMessage("月度朝会开始")
+            self._show_status("月度朝会开始")
     
     def _start_emergency_court_in_panel(self):
         """在信息面板中开始紧急朝会"""
@@ -307,8 +317,19 @@ class WeiyangMainWindow(QMainWindow):
         if meeting_data:
             # 在信息面板显示朝会
             self.map_frame.show_court_meeting(meeting_data)
+            # 若会议包含相关位置，确保地图聚焦（map_frame 会处理）
             # 更新状态消息
-            self.status_bar.showMessage("紧急朝会开始")
+            self._show_status("紧急朝会开始")
+
+    def _on_court_meeting_started(self, meeting_data):
+        """当朝会开始时的处理（用于地图联动等）"""
+        # 将meeting_data传给frame以便其聚焦地图（如果包含相关位置信息）
+        try:
+            if hasattr(self, 'map_frame') and self.map_frame:
+                # 如果面板正在显示朝会，则直接使用现有方法
+                self.map_frame.show_court_meeting(meeting_data)
+        except Exception:
+            pass
     
     def _on_court_decision(self, option_id):
         """处理朝会决策"""
@@ -317,28 +338,30 @@ class WeiyangMainWindow(QMainWindow):
             QMessageBox.warning(self, "决策错误", "无效的决策选项")
             return
         
-        # 获取当前朝会数据，判断朝会类型
-        meeting_data = self.game_controller.get_monthly_court_data()
-        if not meeting_data:
-            meeting_data = self.game_controller.get_emergency_court_data()
-        
-        # 根据朝会类型调用不同的决策方法
-        if meeting_data and meeting_data.get("type") == "emergency":
-            # 紧急朝会决策
+        # 优先查询当前活动中的朝会（可能是单议题/多议题/紧急），以决定调用哪个决策方法
+        meeting = self.game_controller.get_court_meeting_data()
+        if not meeting:
+            # 如果没有活动中的朝会，尝试获取月度或紧急朝会数据（会在内部创建）
+            meeting = self.game_controller.get_monthly_court_data() or self.game_controller.get_emergency_court_data()
+
+        # 根据会议结构选择合适的决策接口：多议题 -> 月度，多数紧急/单议题 -> 对应接口
+        if meeting and "topics" in meeting:
+            result = self.game_controller.make_monthly_decision(option_id)
+        elif meeting and meeting.get("type") == "emergency":
             result = self.game_controller.make_emergency_decision(option_id)
         else:
-            # 月度朝会决策
-            result = self.game_controller.make_monthly_decision(option_id)
+            result = self.game_controller.make_court_decision(option_id)
         
         if result.get("success", False):
             # 更新状态消息
             decision_message = result.get('message', '决策已执行')
-            self.status_bar.showMessage(f"已做出决策: {decision_message}")
+            self._show_status(f"已做出决策: {decision_message}")
             
             # 检查是否还有更多议题
             if result.get("has_more_topics", False):
-                # 更新朝会信息
-                if meeting_data and meeting_data.get("type") == "emergency":
+                # 必须使用 get_monthly/emergency_court_data，它们会将当前 topic 填入 meeting_data["topic"]
+                # get_court_meeting_data() 仅返回原始 dict，不包含当前议题字段
+                if meeting and meeting.get("type") == "emergency":
                     update_data = self.game_controller.get_emergency_court_data()
                 else:
                     update_data = self.game_controller.get_monthly_court_data()
@@ -347,7 +370,7 @@ class WeiyangMainWindow(QMainWindow):
             else:
                 # 朝会完成
                 self.map_frame.show_court_meeting_complete()
-                self.status_bar.showMessage("朝会完成")
+                self._show_status("朝会完成")
                 
                 # 更新游戏状态显示
                 game_info = self.game_controller.get_game_info()
@@ -356,7 +379,7 @@ class WeiyangMainWindow(QMainWindow):
             # 决策失败
             error_message = result.get("message", "未知错误")
             QMessageBox.warning(self, "决策失败", error_message)
-            self.status_bar.showMessage(f"决策失败: {error_message}")
+            self._show_status(f"决策失败: {error_message}")
     
     def _update_game_time(self):
         """更新游戏时间"""
@@ -379,7 +402,7 @@ class WeiyangMainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             # 重置游戏状态
             self.game_controller.reset_game()
-            self.status_bar.showMessage("新游戏已开始")
+            self._show_status("新游戏已开始")
     
     def _save_game(self):
         """保存游戏"""
@@ -395,35 +418,35 @@ class WeiyangMainWindow(QMainWindow):
         """暂停游戏"""
         self.current_speed = "pause"
         self.game_timer.stop()
-        self.status_bar.showMessage("游戏已暂停")
+        self._show_status("游戏已暂停")
         self._update_speed_buttons()
     
     def _set_normal_speed(self):
         """设置正常速度"""
         self.current_speed = "normal"
         self.game_timer.start(self.game_speeds[self.current_speed])
-        self.status_bar.showMessage("游戏速度：正常")
+        self._show_status("游戏速度：正常")
         self._update_speed_buttons()
     
     def _set_fast_speed(self):
         """设置加速"""
         self.current_speed = "fast"
         self.game_timer.start(self.game_speeds[self.current_speed])
-        self.status_bar.showMessage("游戏速度：加速")
+        self._show_status("游戏速度：加速")
         self._update_speed_buttons()
     
     def _set_fastest_speed(self):
         """设置最快速度"""
         self.current_speed = "fastest"
         self.game_timer.start(self.game_speeds[self.current_speed])
-        self.status_bar.showMessage("游戏速度：最快")
+        self._show_status("游戏速度：最快")
         self._update_speed_buttons()
     
     def _set_ultra_speed(self):
         """设置超快速度"""
         self.current_speed = "ultra"
         self.game_timer.start(self.game_speeds[self.current_speed])
-        self.status_bar.showMessage("游戏速度：超级快")
+        self._show_status("游戏速度：快速x3")
         self._update_speed_buttons()
     
     def _update_speed_buttons(self):
@@ -451,7 +474,7 @@ class WeiyangMainWindow(QMainWindow):
     
     def _adjust_ui_layout(self, width, height):
         """根据窗口大小调整UI布局"""
-        # 根据窗口宽度调整字体大小
+        # 仅调整字体
         if width < 1000:
             font_size = 10
         elif width < 1200:
@@ -460,55 +483,10 @@ class WeiyangMainWindow(QMainWindow):
             font_size = 12
         else:
             font_size = 13
-        
-        # 设置基础字体
-        base_font = QFont("", font_size)
-        self.setFont(base_font)
-        
-        # 调整宫殿按钮大小
-        if hasattr(self, 'map_frame'):
-            self._adjust_palace_buttons(width, height)
-        
-        # 调整信息面板大小
-        if hasattr(self, 'info_panel'):
-            self._adjust_info_panel(width, height)
+        self.setFont(QFont("", font_size))
     
     def _adjust_palace_buttons(self, width, height):
-        """调整宫殿按钮大小"""
-        # 根据窗口大小调整按钮
-        if width < 1000:
-            button_width = 80
-            button_height = 40
-            font_size = 9
-        elif width < 1200:
-            button_width = 100
-            button_height = 50
-            font_size = 10
-        elif width < 1400:
-            button_width = 120
-            button_height = 60
-            font_size = 11
-        else:
-            button_width = 140
-            button_height = 70
-            font_size = 12
-        
-        # 设置按钮样式
-        button_style = f"""
-            QPushButton {{
-                min-width: {button_width}px;
-                max-width: {button_width}px;
-                min-height: {button_height}px;
-                max-height: {button_height}px;
-                font-size: {font_size}pt;
-                font-weight: bold;
-            }}
-        """
-        
-        # 应用样式到所有按钮
-        if hasattr(self, 'map_frame'):
-            for button in self.map_frame.findChildren(QPushButton):
-                button.setStyleSheet(button_style)
+        pass  # 按钮统一使用 setFixedSize，不再动态变更
     
     def _adjust_info_panel(self, width, height):
         """调整信息面板大小"""
@@ -555,9 +533,9 @@ class WeiyangMainWindow(QMainWindow):
         """处理朝会完成"""
         # 更新UI状态，显示朝会结果
         if meeting_result:
-            self.status_bar.showMessage(f"朝会完成: {meeting_result.get('topic', {}).get('title', '未知议题')}")
+            self._show_status(f"朝会完成: {meeting_result.get('topic', {}).get('title', '未知议题')}")
         else:
-            self.status_bar.showMessage("朝会完成")
+            self._show_status("朝会完成")
         
         # 恢复游戏时间
         self._set_normal_speed()

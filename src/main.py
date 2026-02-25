@@ -8,7 +8,7 @@
 import sys
 import os
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from ui.weiyang_main_window import WeiyangMainWindow as MainWindow
 
 def main():
@@ -28,6 +28,10 @@ def main():
     # 创建主窗口
     window = MainWindow()
     window.show()
+    # 自动化测试：如果设置环境变量 AUTOFOCUS_TEST，则在短延迟后自动开始一次朝会（用于验证地图聚焦）
+    if os.environ.get("AUTOFOCUS_TEST"):
+        # 使用单次定时器在UI完全初始化后触发朝会
+        QTimer.singleShot(500, lambda: window.game_controller.start_court_meeting())
     
     # 运行应用程序
     sys.exit(app.exec_())
