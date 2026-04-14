@@ -70,6 +70,7 @@ class LLMIntegration:
         """
         self.model_name = model_name
         self.context_managers = {}
+        self._ollama_available = True  # 首次连接失败后置 False，短路后续调用
         self.available_models = self._get_available_models()
         self.default_params = {
             "temperature": 0.7,
@@ -94,6 +95,7 @@ class LLMIntegration:
                 return []
         except Exception as e:
             print(f"获取模型列表失败: {e}")
+            self._ollama_available = False
             return []
     
     def generate(self, prompt: str, context: Optional[List[Dict[str, str]]] = None, 
@@ -109,6 +111,8 @@ class LLMIntegration:
             生成的文本
         """
         try:
+            if not self._ollama_available:
+                raise ConnectionError("Ollama unavailable (short-circuit)")
             # 构建请求参数
             request_params = self.default_params.copy()
             if params:
@@ -136,6 +140,7 @@ class LLMIntegration:
             else:
                 return str(response)
         except Exception as e:
+            self._ollama_available = False
             print(f"生成文本失败: {e}")
             return "抱歉，我无法理解你的意思。"
     
@@ -152,6 +157,8 @@ class LLMIntegration:
             生成的文本
         """
         try:
+            if not self._ollama_available:
+                raise ConnectionError("Ollama unavailable (short-circuit)")
             # 构建请求参数
             request_params = self.default_params.copy()
             if params:
@@ -175,6 +182,7 @@ class LLMIntegration:
             else:
                 return str(response)
         except Exception as e:
+            self._ollama_available = False
             print(f"生成文本失败: {e}")
             return "抱歉，我无法理解你的意思。"
     
