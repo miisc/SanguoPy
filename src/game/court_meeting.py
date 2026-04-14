@@ -552,7 +552,11 @@ class CourtMeetingSystem(QObject):
                     "loyalty": general.get("loyalty", 80),
                     "intelligence": general.get("intelligence", 50),
                     "politics": general.get("politics", 50),
-                    "strength": general.get("strength", 50)
+                    "strength": general.get("strength", 50),
+                    "alignment": general.get("alignment", "pragmatist"),
+                    "category_affinity": general.get("category_affinity", {
+                        "military": 50, "economy": 50, "diplomacy": 50, "internal": 50
+                    }),
                 })
         
         return participants
@@ -569,61 +573,35 @@ class CourtMeetingSystem(QObject):
         return opinions
     
     def _generate_single_opinion(self, topic: Dict[str, Any], participant: Dict[str, Any]) -> Dict[str, Any]:
-        """为单个朝臣生成意见"""
-        # 简单的意见生成逻辑，根据武将属性偏好不同选项
-        intelligence = participant.get("intelligence", 50)
-        politics = participant.get("politics", 50)
-        loyalty = participant.get("loyalty", 80)
-        
-        # 根据议题类型和武将属性选择偏好选项
-        preferred_option_index = 0
-        
-        if topic["id"] == "tax_increase":
-            # 政治属性高的倾向于维持或降低税率
-            if politics > 60:
-                preferred_option_index = random.choice([1, 2])
-            else:
-                preferred_option_index = random.choice([0, 1])
-        elif topic["id"] == "military_expansion":
-            # 忠诚度高的倾向于扩军
-            if loyalty > 70:
-                preferred_option_index = 0
-            # 智力高的倾向于外交
-            elif intelligence > 70:
-                preferred_option_index = 2
-            else:
-                preferred_option_index = 1
-        elif topic["id"] == "infrastructure":
-            # 随机选择
-            preferred_option_index = random.randint(0, 2)
-        elif topic["id"] == "agricultural_development":
-            # 农业发展相关决策
-            preferred_option_index = random.randint(0, 2)
-        elif topic["id"] == "trade_policy":
-            # 贸易政策相关决策
-            preferred_option_index = random.randint(0, 2)
-        elif topic["id"] == "education_reform":
-            # 教育改革相关决策
-            preferred_option_index = random.randint(0, 2)
-        
-        preferred_option = topic["options"][preferred_option_index]
-        
+        """为单个朝臣生成意见（alignment 决定倾向，category_affinity 影响支持度）"""
+        alignment = participant.get("alignment", "pragmatist")
+        category = topic.get("category", "")
+        affinity = participant.get("category_affinity", {}).get(category, 50)
+
+        # alignment → preferred option index: hawk=激进, pragmatist=温和, dove=保守
+        index_map = {"hawk": 0, "pragmatist": 1, "dove": 2}
+        preferred_index = index_map.get(alignment, 1)
+        # 确保 index 不越界
+        preferred_index = min(preferred_index, len(topic["options"]) - 1)
+
+        preferred_option = topic["options"][preferred_index]
+
+        # affinity 越高 → 支持度越高（60~100 线性映射）
+        support_level = int(60 + affinity * 0.4)
+
         personality = self._get_personality_description(participant)
         opinion_text = self._generate_opinion_text_with_llm(
-            topic,
-            participant,
-            preferred_option,
-            personality
+            topic, participant, preferred_option, personality
         )
-        
+
         return {
             "participant_id": participant["id"],
             "participant_name": participant["name"],
             "opinion": opinion_text,
             "preferred_option": preferred_option["id"],
-            "support_level": random.randint(60, 100),  # 支持度
+            "support_level": support_level,
             "personality": personality,
-            "expertise": self._get_expertise_description(topic)
+            "expertise": self._get_expertise_description(topic),
         }
 
     def _generate_opinion_text_with_llm(
@@ -677,21 +655,16 @@ class CourtMeetingSystem(QObject):
         return axes[0][0]
     
     def _get_expertise_description(self, topic):
-        """获取官员专业领域描述"""
-        expertise_map = {
-            "tax_increase": ["财政", "经济", "税收"],
-            "military_expansion": ["军事", "国防", "战略"],
-            "infrastructure": ["工程", "建设", "规划"],
-            "agricultural_development": ["农业", "民生", "土地"],
-            "trade_policy": ["外交", "商业", "贸易"],
-            "education_reform": ["文教", "人才", "学术"]
+        """获取官员专业领域描述（基于 topic category）"""
+        category_map = {
+            "military":  ["军事", "国防", "战略"],
+            "economy":   ["财政", "经济", "商业"],
+            "diplomacy": ["外交", "谋略", "邦交"],
+            "internal":  ["内政", "民生", "建设"],
         }
-        
-        topic_key = topic["id"]
-        if topic_key in expertise_map:
-            return random.choice(expertise_map[topic_key])
-        else:
-            return "综合"
+        category = topic.get("category", "")
+        choices = category_map.get(category, ["综合"])
+        return random.choice(choices)
     
     def get_participant_info(self, participant_id):
         """获取参与官员的详细信息"""

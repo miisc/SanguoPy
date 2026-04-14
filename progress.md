@@ -183,3 +183,14 @@
 
 <!-- 格式：Goal / Success criteria / Constraints / Test idea，不写其他 -->
 
+### F8 — 官员NPC个性化
+**Goal:** 官员立场（hawk/dove/pragmatist）与类别亲和度（category_affinity）驱动朝会提案倾向，替换旧 topic ID 硬编码逻辑。
+**Success criteria:**
+- hawk 立场官员 → 偏好选项 options[0]（激进）。
+- dove 立场官员 → 偏好选项 options[2]（保守）。
+- pragmatist 立场官员 → 偏好选项 options[1]（温和）。
+- category_affinity 90 → support_level > 75；category_affinity 25 → support_level < 75。
+- `generals.json` 全部 10 名武将含 `alignment` + `category_affinity`（4 类键）。
+**Constraints:** 不改 `_generate_opinion_text_with_llm`；不改 `make_decision`；不改 generals.json 已有字段（只新增）。
+**Test idea:** `TestNpcPersonality` — 5 用例：hawk/dove/pragmatist 各 1 + affinity 影响 support_level + JSON 字段完整性。
+

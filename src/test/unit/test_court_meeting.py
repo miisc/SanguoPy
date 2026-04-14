@@ -342,3 +342,78 @@ class TestCourtTopicLibrary:
     def test_court_system_uses_full_topic_pool(self, cms):
         """CourtMeetingSystem.__init__ loads topics from JSON via CourtTopicLoader."""
         assert len(cms.topic_templates) >= 30
+
+
+# ---------------------------------------------------------------------------
+# F8 — NPC 个性化：alignment + category_affinity 驱动提案倾向
+# ---------------------------------------------------------------------------
+
+class TestNpcPersonality:
+    """F8: Official alignment determines preferred option; affinity raises support_level."""
+
+    SAMPLE_TOPIC = {
+        "id": "mil_001",
+        "category": "military",
+        "title": "扩充兵力",
+        "description": "扩充兵力",
+        "background": "",
+        "has_location": False,
+        "options": [
+            {"id": "A", "title": "大规模扩军", "description": "激进扩军", "effects": {}, "dimension_effects": {"military": 8, "economy": -4}},
+            {"id": "B", "title": "适度补充", "description": "温和补充", "effects": {}, "dimension_effects": {"military": 4, "economy": -2}},
+            {"id": "C", "title": "暂缓扩军", "description": "保守观望", "effects": {}, "dimension_effects": {"military": 1, "economy": 1}},
+        ]
+    }
+
+    def _make_participant(self, alignment, military_affinity=50):
+        return {
+            "id": "test_p",
+            "name": "测试将",
+            "title": "将军",
+            "loyalty": 80,
+            "intelligence": 70,
+            "politics": 60,
+            "strength": 75,
+            "alignment": alignment,
+            "category_affinity": {
+                "military": military_affinity,
+                "economy": 50,
+                "diplomacy": 50,
+                "internal": 50,
+            },
+        }
+
+    def test_hawk_prefers_aggressive_option(self, cms):
+        """hawk alignment → preferred option is options[0] (aggressive)."""
+        p = self._make_participant("hawk")
+        opinion = cms._generate_single_opinion(self.SAMPLE_TOPIC, p)
+        assert opinion["preferred_option"] == "A"
+
+    def test_dove_prefers_cautious_option(self, cms):
+        """dove alignment → preferred option is options[2] (cautious)."""
+        p = self._make_participant("dove")
+        opinion = cms._generate_single_opinion(self.SAMPLE_TOPIC, p)
+        assert opinion["preferred_option"] == "C"
+
+    def test_pragmatist_prefers_balanced_option(self, cms):
+        """pragmatist alignment → preferred option is options[1] (balanced)."""
+        p = self._make_participant("pragmatist")
+        opinion = cms._generate_single_opinion(self.SAMPLE_TOPIC, p)
+        assert opinion["preferred_option"] == "B"
+
+    def test_high_affinity_raises_support_level(self, cms):
+        """Military affinity 90 on military topic → support_level > 75."""
+        p = self._make_participant("hawk", military_affinity=90)
+        opinion = cms._generate_single_opinion(self.SAMPLE_TOPIC, p)
+        assert opinion["support_level"] > 75
+
+    def test_generals_json_has_alignment_and_affinity(self):
+        """All generals in generals.json have alignment + category_affinity fields."""
+        import json, os
+        path = os.path.join(os.path.dirname(__file__), "../../../data/generals.json")
+        generals = json.load(open(path))
+        for gid, g in generals.items():
+            assert "alignment" in g, f"{gid} missing alignment"
+            assert "category_affinity" in g, f"{gid} missing category_affinity"
+            assert set(g["category_affinity"].keys()) == {"military", "economy", "diplomacy", "internal"}, \
+                f"{gid} category_affinity wrong keys"

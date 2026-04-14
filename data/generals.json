@@ -9,7 +9,14 @@
     "strength": 72,
     "intelligence": 91,
     "politics": 94,
-    "charm": 92
+    "charm": 92,
+    "alignment": "hawk",
+    "category_affinity": {
+      "military": 90,
+      "economy": 75,
+      "diplomacy": 60,
+      "internal": 72
+    }
   },
   "liubei": {
     "id": "liubei",
@@ -21,7 +28,14 @@
     "strength": 75,
     "intelligence": 74,
     "politics": 76,
-    "charm": 99
+    "charm": 99,
+    "alignment": "pragmatist",
+    "category_affinity": {
+      "military": 65,
+      "economy": 65,
+      "diplomacy": 82,
+      "internal": 70
+    }
   },
   "sunquan": {
     "id": "sunquan",
@@ -33,7 +47,14 @@
     "strength": 70,
     "intelligence": 80,
     "politics": 87,
-    "charm": 89
+    "charm": 89,
+    "alignment": "pragmatist",
+    "category_affinity": {
+      "military": 65,
+      "economy": 80,
+      "diplomacy": 85,
+      "internal": 70
+    }
   },
   "zhugeliang": {
     "id": "zhugeliang",
@@ -45,7 +66,14 @@
     "strength": 38,
     "intelligence": 100,
     "politics": 88,
-    "charm": 92
+    "charm": 92,
+    "alignment": "dove",
+    "category_affinity": {
+      "military": 72,
+      "economy": 85,
+      "diplomacy": 80,
+      "internal": 92
+    }
   },
   "simayi": {
     "id": "simayi",
@@ -57,7 +85,14 @@
     "strength": 63,
     "intelligence": 96,
     "politics": 90,
-    "charm": 79
+    "charm": 79,
+    "alignment": "pragmatist",
+    "category_affinity": {
+      "military": 80,
+      "economy": 82,
+      "diplomacy": 70,
+      "internal": 82
+    }
   },
   "zhouyu": {
     "id": "zhouyu",
@@ -69,7 +104,14 @@
     "strength": 71,
     "intelligence": 96,
     "politics": 83,
-    "charm": 98
+    "charm": 98,
+    "alignment": "hawk",
+    "category_affinity": {
+      "military": 90,
+      "economy": 65,
+      "diplomacy": 75,
+      "internal": 60
+    }
   },
   "guanyu": {
     "id": "guanyu",
@@ -81,7 +123,14 @@
     "strength": 97,
     "intelligence": 76,
     "politics": 62,
-    "charm": 93
+    "charm": 93,
+    "alignment": "hawk",
+    "category_affinity": {
+      "military": 95,
+      "economy": 40,
+      "diplomacy": 45,
+      "internal": 45
+    }
   },
   "zhangfei": {
     "id": "zhangfei",
@@ -93,7 +142,14 @@
     "strength": 98,
     "intelligence": 23,
     "politics": 11,
-    "charm": 74
+    "charm": 74,
+    "alignment": "hawk",
+    "category_affinity": {
+      "military": 92,
+      "economy": 25,
+      "diplomacy": 25,
+      "internal": 35
+    }
   },
   "zhaoyun": {
     "id": "zhaoyun",
@@ -105,7 +161,14 @@
     "strength": 96,
     "intelligence": 76,
     "politics": 65,
-    "charm": 85
+    "charm": 85,
+    "alignment": "pragmatist",
+    "category_affinity": {
+      "military": 85,
+      "economy": 55,
+      "diplomacy": 60,
+      "internal": 55
+    }
   },
   "luxun": {
     "id": "luxun",
@@ -117,6 +180,13 @@
     "strength": 68,
     "intelligence": 96,
     "politics": 88,
-    "charm": 92
+    "charm": 92,
+    "alignment": "dove",
+    "category_affinity": {
+      "military": 78,
+      "economy": 80,
+      "diplomacy": 82,
+      "internal": 85
+    }
   }
 }
