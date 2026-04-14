@@ -37,14 +37,19 @@ class GameModel:
                 "intel_points": 20
             },
             "factions": {
-                "wei": {"name": "魏", "color": "#0000FF", "capital": "luoyang"},
-                "shu": {"name": "蜀", "color": "#008000", "capital": "chengdu"},
-                "wu": {"name": "吴", "color": "#FF0000", "capital": "jianye"}
+                "wei": {"name": "魏", "color": "#0000FF", "capital": "luoyang", "alignment": "hawk"},
+                "shu": {"name": "蜀", "color": "#008000", "capital": "chengdu", "alignment": "pragmatist"},
+                "wu":  {"name": "吴", "color": "#FF0000", "capital": "jianye",  "alignment": "dove"}
             },
             "cities": {},
             "generals": {},
             "armies": {},
             "intel_unlocks": [],
+            "faction_dimensions": {
+                faction_id: {"military": 50, "economy": 50, "technology": 50,
+                             "public_order": 50, "diplomacy": 50}
+                for faction_id in ("wei", "shu", "wu")
+            },
             "court_meetings": [],
             "last_court_meeting": None
         }
@@ -85,6 +90,22 @@ class GameModel:
         recovery = int((current * 0.05) + 0.5)
         court_resources["zhaoling_authority"] = min(100, current + recovery)
     
+    def _consume_food_per_xun(self):
+        """每旬消耗粮食：1 food per soldier，下限 0。"""
+        resources = self.game_data["resources"]
+        soldiers = resources.get("soldiers", 0)
+        food = resources.get("food", 0)
+        resources["food"] = max(0, food - soldiers)
+
+    def _run_ai_factions_monthly(self):
+        """月初为所有非玩家势力运行 AI 月度决策。"""
+        from game.faction_ai import FactionAI
+        player_faction = self.game_data["game_info"].get("current_faction", "wei")
+        ai = FactionAI(self)
+        for faction_id in self.game_data["factions"]:
+            if faction_id != player_faction:
+                ai.run_monthly_decision(faction_id)
+
     def _recover_monthly_intel_points(self):
         """每月初一恢复 5 情报点，上限 100。"""
         court_resources = self.game_data.setdefault("court_resources", {})
@@ -222,10 +243,15 @@ class GameModel:
         self.game_data["game_info"]["year"] = year
         self.game_data["game_info"]["turn"] += 1
 
+        crossed_xun = (day in (10, 20)) or crossed_month
+        if crossed_xun:
+            self._consume_food_per_xun()
+
         if crossed_month:
             self._recover_monthly_zhaoling_authority()
             self._recover_monthly_intel_points()
             self._expire_intel_unlocks()
+            self._run_ai_factions_monthly()
     
     def save_game(self, filename: str):
         """保存游戏"""

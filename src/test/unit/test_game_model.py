@@ -316,3 +316,51 @@ class TestIntelligenceSystem:
         success = model.unlock_city_intel("enemy_city", duration_months=3)
         assert success is False
         assert model.get_court_resources()["intel_points"] == 3
+
+
+# ---------------------------------------------------------------------------
+# F12 — 军粮消耗：1 food per soldier per 旬
+# ---------------------------------------------------------------------------
+
+class TestFoodConsumption:
+    """F12: Food deducted every 旬 (10 days) at rate 1 per soldier."""
+
+    def test_food_deducted_at_xun_boundary_day10(self, model):
+        """旬末（day 10）消耗 soldiers 数量的粮食。"""
+        model.game_data["resources"]["soldiers"] = 1000
+        model.game_data["resources"]["food"] = 50000
+        model.game_data["game_info"]["day"] = 9
+        model.advance_time()  # day → 10，旬末
+        assert model.game_data["resources"]["food"] == 49000
+
+    def test_food_deducted_at_xun_boundary_day20(self, model):
+        """旬末（day 20）消耗 soldiers 数量的粮食。"""
+        model.game_data["resources"]["soldiers"] = 500
+        model.game_data["resources"]["food"] = 10000
+        model.game_data["game_info"]["day"] = 19
+        model.advance_time()  # day → 20
+        assert model.game_data["resources"]["food"] == 9500
+
+    def test_food_deducted_at_month_boundary(self, model):
+        """月末（day 30 → 1）也触发一次旬末消耗。"""
+        model.game_data["resources"]["soldiers"] = 2000
+        model.game_data["resources"]["food"] = 20000
+        model.game_data["game_info"]["day"] = 30
+        model.advance_time()  # day → 1，月份进位
+        assert model.game_data["resources"]["food"] == 18000
+
+    def test_food_not_deducted_on_non_xun_day(self, model):
+        """非旬末（如 day 5）不消耗粮食。"""
+        model.game_data["resources"]["soldiers"] = 1000
+        model.game_data["resources"]["food"] = 50000
+        model.game_data["game_info"]["day"] = 4
+        model.advance_time()  # day → 5，非旬末
+        assert model.game_data["resources"]["food"] == 50000
+
+    def test_food_floored_at_zero(self, model):
+        """粮食不足时消耗后归零，不变负数。"""
+        model.game_data["resources"]["soldiers"] = 5000
+        model.game_data["resources"]["food"] = 100
+        model.game_data["game_info"]["day"] = 9
+        model.advance_time()
+        assert model.game_data["resources"]["food"] == 0

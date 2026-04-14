@@ -183,7 +183,28 @@
 
 <!-- 格式：Goal / Success criteria / Constraints / Test idea，不写其他 -->
 
-### F9 — 情报点资源与城市解锁
+### F11 — 敌对AI势力月度决策
+**Goal:** 非玩家势力（shu/wu）每月自动选题决策，各维护独立 `faction_dimensions`，玩家维度不受影响。
+**Success criteria:**
+- `game_data["faction_dimensions"]` 三势力各初始 50/50/50/50/50。
+- `factions[id]["alignment"]`：wei=hawk, shu=pragmatist, wu=dove。
+- `FactionAI.run_monthly_decision(faction_id)` 改变该势力 faction_dimensions；不改 `game_data["dimensions"]`。
+- `advance_time` 月份进位时自动为 shu/wu 执行 AI 决策。
+**Constraints:** 不改 CourtTopicLoader；不改玩家决策路径；AI 不触发朝会 Qt 信号。
+**Test idea:** `TestFactionAI` — 5 用例：初始值/立场字段/dims改变/玩家dims不变/advance_time触发。
+
+### F12 — 军粮消耗计算
+**Goal:** 每旬（day 10/20/月末）自动消耗粮食，消耗量 = 1 food × soldiers，下限 0。
+**Success criteria:**
+- day 9→10：food -= soldiers。
+- day 19→20：food -= soldiers。
+- day 30→1（月末）：food -= soldiers。
+- 非旬末（day 4→5 等）：food 不变。
+- food 不足时归零，不变负数。
+**Constraints:** 不改月度恢复逻辑；不改 `game_data["resources"]` 结构。
+**Test idea:** `TestFoodConsumption` — 5 用例：day10/day20/月末/非旬末/下限归零。
+
+
 **Goal:** `intel_points` 作为独立资源，支持 `unlock_city_intel` 临时突破迷雾，让 `get_cities_for_player` 在时效内返回敌方城市完整数据。
 **Success criteria:**
 - `court_resources["intel_points"]` 初始 20，月初 +5，上限 100。
