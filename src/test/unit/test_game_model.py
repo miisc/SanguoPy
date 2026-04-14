@@ -250,3 +250,69 @@ class TestZhaolingAuthorityRecoveryBoundaries:
         model.game_data["court_resources"]["zhaoling_authority"] = initial
         model.advance_time()
         assert model.get_court_resources()["zhaoling_authority"] == expected
+
+
+# ---------------------------------------------------------------------------
+# F9 — 情报点资源：初始值、月度恢复、城市解锁与时效
+# ---------------------------------------------------------------------------
+
+class TestIntelligenceSystem:
+    """F9: intel_points resource, unlock_city_intel, fog bypass with expiry."""
+
+    def test_intel_points_initial_value(self, model):
+        """game_data.court_resources.intel_points 初始为 20。"""
+        assert model.get_court_resources()["intel_points"] == 20
+
+    def test_monthly_recovery_adds_five(self, model):
+        """月初推进时 intel_points +5。"""
+        model.game_data["court_resources"]["intel_points"] = 30
+        model.game_data["game_info"]["day"] = 30
+        model.advance_time()  # 触发月份进位
+        assert model.get_court_resources()["intel_points"] == 35
+
+    def test_intel_points_capped_at_100(self, model):
+        """intel_points 恢复后上限 100，不溢出。"""
+        model.game_data["court_resources"]["intel_points"] = 98
+        model.game_data["game_info"]["day"] = 30
+        model.advance_time()
+        assert model.get_court_resources()["intel_points"] == 100
+
+    def test_unlock_city_intel_deducts_points(self, model):
+        """unlock_city_intel 消耗 5 intel_points。"""
+        model.game_data["court_resources"]["intel_points"] = 20
+        # 添加一个非己方城市供测试
+        model.game_data["cities"]["enemy_city"] = {"name": "敌城", "faction": "shu", "soldiers": 3000}
+        success = model.unlock_city_intel("enemy_city", duration_months=3)
+        assert success is True
+        assert model.get_court_resources()["intel_points"] == 15
+
+    def test_unlocked_city_visible_through_fog(self, model):
+        """unlock 后 get_cities_for_player 对该城市返回完整数据（faction/soldiers 可见）。"""
+        model.game_data["cities"]["enemy_city"] = {"name": "敌城", "faction": "shu", "soldiers": 3000}
+        model.game_data["court_resources"]["intel_points"] = 20
+        model.unlock_city_intel("enemy_city", duration_months=3)
+        cities = model.get_cities_for_player("wei")
+        assert cities["enemy_city"]["faction"] == "shu"
+        assert cities["enemy_city"]["soldiers"] == 3000
+
+    def test_intel_expires_after_duration(self, model):
+        """时效到期后城市重新被迷雾遮蔽（faction/soldiers=None）。"""
+        model.game_data["cities"]["enemy_city"] = {"name": "敌城", "faction": "shu", "soldiers": 3000}
+        model.game_data["court_resources"]["intel_points"] = 20
+        model.game_data["game_info"]["month"] = 1
+        model.game_data["game_info"]["year"] = 190
+        model.unlock_city_intel("enemy_city", duration_months=1)
+        # 推进 2 个月（确保过期）
+        for _ in range(60):  # 30天/月 × 2月
+            model.advance_time()
+        cities = model.get_cities_for_player("wei")
+        assert cities["enemy_city"]["faction"] is None
+        assert cities["enemy_city"]["soldiers"] is None
+
+    def test_insufficient_intel_points_rejects_unlock(self, model):
+        """intel_points 不足 5 时 unlock_city_intel 返回 False，不扣点。"""
+        model.game_data["cities"]["enemy_city"] = {"name": "敌城", "faction": "shu", "soldiers": 3000}
+        model.game_data["court_resources"]["intel_points"] = 3
+        success = model.unlock_city_intel("enemy_city", duration_months=3)
+        assert success is False
+        assert model.get_court_resources()["intel_points"] == 3

@@ -33,7 +33,8 @@ class GameModel:
                 "soldiers": 5000
             },
             "court_resources": {
-                "zhaoling_authority": 50
+                "zhaoling_authority": 50,
+                "intel_points": 20
             },
             "factions": {
                 "wei": {"name": "魏", "color": "#0000FF", "capital": "luoyang"},
@@ -43,6 +44,7 @@ class GameModel:
             "cities": {},
             "generals": {},
             "armies": {},
+            "intel_unlocks": [],
             "court_meetings": [],
             "last_court_meeting": None
         }
@@ -83,6 +85,56 @@ class GameModel:
         recovery = int((current * 0.05) + 0.5)
         court_resources["zhaoling_authority"] = min(100, current + recovery)
     
+    def _recover_monthly_intel_points(self):
+        """每月初一恢复 5 情报点，上限 100。"""
+        court_resources = self.game_data.setdefault("court_resources", {})
+        current = court_resources.get("intel_points", 20)
+        court_resources["intel_points"] = min(100, current + 5)
+
+    def _expire_intel_unlocks(self):
+        """清除已过期的情报解锁条目。"""
+        info = self.game_data["game_info"]
+        year, month = info["year"], info["month"]
+        self.game_data["intel_unlocks"] = [
+            u for u in self.game_data.get("intel_unlocks", [])
+            if (u["expires_year"], u["expires_month"]) > (year, month)
+        ]
+
+    def unlock_city_intel(self, city_id: str, duration_months: int, cost: int = 5) -> bool:
+        """消耗 `cost` 情报点，临时解锁城市情报（duration_months 个月内可见）。
+        情报点不足时返回 False，不扣点。
+        """
+        court_resources = self.game_data.setdefault("court_resources", {})
+        current = court_resources.get("intel_points", 0)
+        if current < cost:
+            return False
+        court_resources["intel_points"] = current - cost
+
+        info = self.game_data["game_info"]
+        exp_month = info["month"] + duration_months
+        exp_year = info["year"] + (exp_month - 1) // 12
+        exp_month = ((exp_month - 1) % 12) + 1
+
+        # 替换同一城市已有的解锁（刷新时效）
+        unlocks = self.game_data.setdefault("intel_unlocks", [])
+        self.game_data["intel_unlocks"] = [u for u in unlocks if u["city_id"] != city_id]
+        self.game_data["intel_unlocks"].append({
+            "city_id": city_id,
+            "expires_year": exp_year,
+            "expires_month": exp_month,
+        })
+        return True
+
+    def _is_city_intel_unlocked(self, city_id: str) -> bool:
+        """检查城市是否处于有效情报解锁期内。"""
+        info = self.game_data["game_info"]
+        year, month = info["year"], info["month"]
+        for u in self.game_data.get("intel_unlocks", []):
+            if u["city_id"] == city_id:
+                return (u["expires_year"], u["expires_month"]) > (year, month)
+        return False
+
+
     def update_resources(self, resources: Dict[str, int]):
         """更新资源"""
         for key, value in resources.items():
@@ -123,7 +175,7 @@ class GameModel:
         """
         result = {}
         for city_id, city in self.game_data["cities"].items():
-            if city.get("faction") == faction:
+            if city.get("faction") == faction or self._is_city_intel_unlocked(city_id):
                 result[city_id] = dict(city)
             else:
                 masked = dict(city)
@@ -172,6 +224,8 @@ class GameModel:
 
         if crossed_month:
             self._recover_monthly_zhaoling_authority()
+            self._recover_monthly_intel_points()
+            self._expire_intel_unlocks()
     
     def save_game(self, filename: str):
         """保存游戏"""

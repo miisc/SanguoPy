@@ -183,7 +183,17 @@
 
 <!-- 格式：Goal / Success criteria / Constraints / Test idea，不写其他 -->
 
-### F8 — 官员NPC个性化
+### F9 — 情报点资源与城市解锁
+**Goal:** `intel_points` 作为独立资源，支持 `unlock_city_intel` 临时突破迷雾，让 `get_cities_for_player` 在时效内返回敌方城市完整数据。
+**Success criteria:**
+- `court_resources["intel_points"]` 初始 20，月初 +5，上限 100。
+- `unlock_city_intel(city_id, duration_months, cost=5)` — 扣点、写解锁记录；点数不足返回 False 且不扣点。
+- 解锁期内 `get_cities_for_player(faction)` 对该城市返回完整 faction/soldiers。
+- 时效到期后城市重新被迷雾遮蔽。
+**Constraints:** 不改 `get_cities()` 原始接口；不修改诏令权威逻辑；不改 `_recover_monthly_zhaoling_authority`。
+**Test idea:** `TestIntelligenceSystem` — 7 用例：初始值/月度恢复/上限/扣点/fog-bypass/过期/点数不足拒绝。
+
+
 **Goal:** 官员立场（hawk/dove/pragmatist）与类别亲和度（category_affinity）驱动朝会提案倾向，替换旧 topic ID 硬编码逻辑。
 **Success criteria:**
 - hawk 立场官员 → 偏好选项 options[0]（激进）。
