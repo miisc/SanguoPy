@@ -1,0 +1,630 @@
+{
+  "meta": {
+    "name": "MVP Major Event Templates",
+    "version": "0.1.0",
+    "time_granularity": "xun",
+    "cooldown_scope": "event_type",
+    "emergency_trigger_behavior": "interrupt_and_enter_emergency_meeting_immediately",
+    "source_of_truth": "docs/design/CORE_SYSTEMS.md",
+    "notes": [
+      "MVP uses generic templates first.",
+      "All events in this draft can trigger emergency court meeting.",
+      "Numeric effects are baseline template values and can be adjusted by balancing config.",
+      "If LLM modifies effects, validation gateway must run before apply."
+    ]
+  },
+  "events": [
+    {
+      "event_id": "evt_border_alarm",
+      "event_type": "military",
+      "title": "边关急报",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "border_city_under_siege",
+            "description": "任一边境城市进入被围状态"
+          },
+          {
+            "code": "enemy_force_near_border",
+            "description": "敌军主力进入边境预警范围"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "固守待援",
+          "effects": {
+            "military": 8,
+            "economy": -4,
+            "technology": 0,
+            "public_order": -2,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "主动出击",
+          "effects": {
+            "military": 5,
+            "economy": -8,
+            "technology": 0,
+            "public_order": -3,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "议和拖延",
+          "effects": {
+            "military": -2,
+            "economy": -1,
+            "technology": 0,
+            "public_order": 1,
+            "diplomacy": 4
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "frontier",
+          "siege",
+          "response"
+        ]
+      },
+      "cooldown_xun": 2,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_supply_line_cut",
+      "event_type": "military",
+      "title": "粮道断绝",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "main_supply_route_blocked",
+            "description": "主补给线路被截断"
+          },
+          {
+            "code": "army_supply_less_than_1_xun",
+            "description": "主力军粮预计不足1旬"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "改线运输",
+          "effects": {
+            "military": 2,
+            "economy": -5,
+            "technology": 0,
+            "public_order": 0,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "强行护送",
+          "effects": {
+            "military": 6,
+            "economy": -9,
+            "technology": 0,
+            "public_order": -2,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "就地征发",
+          "effects": {
+            "military": 3,
+            "economy": -2,
+            "technology": 0,
+            "public_order": -6,
+            "diplomacy": 0
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "logistics",
+          "supply"
+        ]
+      },
+      "cooldown_xun": 3,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_drought",
+      "event_type": "disaster",
+      "title": "大旱灾",
+      "priority": "high",
+      "trigger_conditions": {
+        "all_of": [
+          {
+            "code": "drought_index_high",
+            "description": "干旱指数达到重大等级"
+          },
+          {
+            "code": "affected_prefecture_count_gte_1",
+            "description": "至少1个州郡受影响"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "开仓赈济",
+          "effects": {
+            "military": -1,
+            "economy": -8,
+            "technology": 0,
+            "public_order": 7,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "减税缓征",
+          "effects": {
+            "military": 0,
+            "economy": -6,
+            "technology": 0,
+            "public_order": 5,
+            "diplomacy": 1
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "保军优先",
+          "effects": {
+            "military": 4,
+            "economy": -2,
+            "technology": 0,
+            "public_order": -7,
+            "diplomacy": -1
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "agriculture",
+          "famine_risk"
+        ]
+      },
+      "cooldown_xun": 4,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_flood",
+      "event_type": "disaster",
+      "title": "洪涝灾",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "flood_level_major",
+            "description": "洪涝达到重大等级"
+          },
+          {
+            "code": "major_transport_disrupted",
+            "description": "交通与漕运受阻"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "修堤抢险",
+          "effects": {
+            "military": 0,
+            "economy": -7,
+            "technology": 1,
+            "public_order": 3,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "迁民安置",
+          "effects": {
+            "military": -1,
+            "economy": -5,
+            "technology": 0,
+            "public_order": 4,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "暂缓处置",
+          "effects": {
+            "military": 0,
+            "economy": 1,
+            "technology": 0,
+            "public_order": -8,
+            "diplomacy": -1
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "flood",
+          "infrastructure"
+        ]
+      },
+      "cooldown_xun": 4,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_epidemic",
+      "event_type": "disaster",
+      "title": "疫病蔓延",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "epidemic_outbreak",
+            "description": "人口密集城市爆发疫病"
+          },
+          {
+            "code": "medical_capacity_overload",
+            "description": "医疗承载超限"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "封城防疫",
+          "effects": {
+            "military": -2,
+            "economy": -6,
+            "technology": 0,
+            "public_order": 2,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "广设医药",
+          "effects": {
+            "military": -1,
+            "economy": -7,
+            "technology": 1,
+            "public_order": 5,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "军政分离",
+          "effects": {
+            "military": 3,
+            "economy": -3,
+            "technology": 0,
+            "public_order": -4,
+            "diplomacy": 0
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "health",
+          "epidemic"
+        ]
+      },
+      "cooldown_xun": 3,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_local_rebellion",
+      "event_type": "military",
+      "title": "郡县叛乱",
+      "priority": "high",
+      "trigger_conditions": {
+        "all_of": [
+          {
+            "code": "local_loyalty_low",
+            "description": "地方忠诚低于阈值"
+          },
+          {
+            "code": "public_order_low",
+            "description": "地方秩序低于阈值"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "速战镇压",
+          "effects": {
+            "military": 7,
+            "economy": -4,
+            "technology": 0,
+            "public_order": -3,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "招抚安抚",
+          "effects": {
+            "military": 1,
+            "economy": -3,
+            "technology": 0,
+            "public_order": 5,
+            "diplomacy": 1
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "委任地方",
+          "effects": {
+            "military": 0,
+            "economy": 1,
+            "technology": 0,
+            "public_order": 2,
+            "diplomacy": 0
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "rebellion",
+          "governance"
+        ]
+      },
+      "cooldown_xun": 3,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_mutiny",
+      "event_type": "military",
+      "title": "军中哗变",
+      "priority": "high",
+      "trigger_conditions": {
+        "all_of": [
+          {
+            "code": "army_morale_low",
+            "description": "主力部队士气低于阈值"
+          },
+          {
+            "code": "army_supply_low",
+            "description": "军粮储备低于阈值"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "立威惩戒",
+          "effects": {
+            "military": 4,
+            "economy": -1,
+            "technology": 0,
+            "public_order": -2,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "犒赏安抚",
+          "effects": {
+            "military": 3,
+            "economy": -6,
+            "technology": 0,
+            "public_order": 2,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "撤换主将",
+          "effects": {
+            "military": 2,
+            "economy": -2,
+            "technology": 0,
+            "public_order": 0,
+            "diplomacy": -1
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "army",
+          "discipline"
+        ]
+      },
+      "cooldown_xun": 2,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_enemy_capital_mobilization",
+      "event_type": "intelligence",
+      "title": "敌都异动",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "intel_enemy_capital_mobilization",
+            "description": "情报显示敌都出现大规模动员"
+          },
+          {
+            "code": "intel_enemy_main_force_shift",
+            "description": "情报显示敌主力异常调动"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "前推侦察",
+          "effects": {
+            "military": 1,
+            "economy": -3,
+            "technology": 0,
+            "public_order": 0,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "加固边防",
+          "effects": {
+            "military": 6,
+            "economy": -5,
+            "technology": 0,
+            "public_order": 1,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "先发制人",
+          "effects": {
+            "military": 8,
+            "economy": -8,
+            "technology": 0,
+            "public_order": -2,
+            "diplomacy": -3
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "intel",
+          "enemy_capital"
+        ]
+      },
+      "cooldown_xun": 2,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_chokepoint_change",
+      "event_type": "military",
+      "title": "战略通道开启或失守",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "chokepoint_status_changed",
+            "description": "关隘/渡口/山道状态发生关键变化"
+          },
+          {
+            "code": "route_accessibility_changed",
+            "description": "主干路线可达性变化"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "重兵把守",
+          "effects": {
+            "military": 7,
+            "economy": -6,
+            "technology": 0,
+            "public_order": 0,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "机动游击",
+          "effects": {
+            "military": 4,
+            "economy": -3,
+            "technology": 1,
+            "public_order": 0,
+            "diplomacy": 0
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "暂避锋芒",
+          "effects": {
+            "military": -2,
+            "economy": -1,
+            "technology": 0,
+            "public_order": 1,
+            "diplomacy": 1
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "route",
+          "chokepoint"
+        ]
+      },
+      "cooldown_xun": 2,
+      "emergency_meeting_required": true
+    },
+    {
+      "event_id": "evt_capital_crisis",
+      "event_type": "mixed",
+      "title": "都城危机",
+      "priority": "high",
+      "trigger_conditions": {
+        "any_of": [
+          {
+            "code": "capital_under_multi_pressure",
+            "description": "都城连续受到军事与灾害复合压力"
+          },
+          {
+            "code": "capital_order_or_supply_critical",
+            "description": "都城秩序或补给进入危急状态"
+          }
+        ]
+      },
+      "options": [
+        {
+          "option_id": "A",
+          "label": "迁都预案",
+          "effects": {
+            "military": 1,
+            "economy": -7,
+            "technology": 0,
+            "public_order": -2,
+            "diplomacy": -1
+          }
+        },
+        {
+          "option_id": "B",
+          "label": "死守都城",
+          "effects": {
+            "military": 8,
+            "economy": -6,
+            "technology": 0,
+            "public_order": -4,
+            "diplomacy": -2
+          }
+        },
+        {
+          "option_id": "C",
+          "label": "权力委托",
+          "effects": {
+            "military": 3,
+            "economy": -2,
+            "technology": 0,
+            "public_order": 1,
+            "diplomacy": 1
+          }
+        }
+      ],
+      "effects": {
+        "tags": [
+          "capital",
+          "governance",
+          "crisis"
+        ]
+      },
+      "cooldown_xun": 4,
+      "emergency_meeting_required": true
+    }
+  ]
+}

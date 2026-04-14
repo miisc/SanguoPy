@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "name": "MVP LLM Validation Policy",
+    "version": "0.1.0",
+    "source_of_truth": "docs/design/CORE_SYSTEMS.md",
+    "scope": "mvp",
+    "applies_to": [
+      "proposal_generation",
+      "proposal_effect_modification"
+    ],
+    "notes": [
+      "LLM output can modify numeric effects only after passing validation gateway.",
+      "When validation fails, system must fall back to template defaults.",
+      "History conflicts must defer to Records of the Three Kingdoms (Sanguozhi)."
+    ]
+  },
+  "schema": {
+    "required_fields": [
+      "proposal_id",
+      "proposal_type",
+      "title",
+      "background",
+      "options",
+      "base_effects",
+      "constraints",
+      "source_tag"
+    ],
+    "options_constraints": {
+      "min_options": 2,
+      "max_options": 4,
+      "required_option_fields": [
+        "option_id",
+        "label",
+        "effects"
+      ]
+    }
+  },
+  "numeric_rules": {
+    "tracked_dimensions": [
+      "military",
+      "economy",
+      "technology",
+      "public_order",
+      "diplomacy"
+    ],
+    "dimension_min": 0,
+    "dimension_max": 100,
+    "clamp_after_apply": true,
+    "single_dimension_delta_abs_max": 15,
+    "sum_positive_delta_max": 20,
+    "sum_negative_delta_abs_max": 20,
+    "reject_all_positive_without_cost": true,
+    "reject_if_all_dimensions_zero": true
+  },
+  "balance_rules": {
+    "require_tradeoff": true,
+    "tradeoff_definition": "at_least_one_positive_and_at_least_one_negative",
+    "allow_neutral_option": false,
+    "max_extreme_options_per_proposal": 1,
+    "extreme_option_threshold_abs": 12
+  },
+  "historical_rules": {
+    "source_priority": [
+      "sanguozhi"
+    ],
+    "locked_dimensions": [
+      "official_system",
+      "place_names",
+      "timeline",
+      "birth_death_records",
+      "major_historical_events"
+    ],
+    "reject_on_conflict": true,
+    "conflict_resolution": "fallback_to_template_default"
+  },
+  "runtime_rules": {
+    "validation_order": [
+      "schema_validation",
+      "numeric_validation",
+      "balance_validation",
+      "historical_validation",
+      "safety_validation"
+    ],
+    "on_failure": {
+      "apply_fallback": true,
+      "fallback_target": "template_default",
+      "mark_output_invalid": true
+    },
+    "on_success": {
+      "apply_output": true,
+      "record_audit_log": true
+    }
+  },
+  "audit": {
+    "enabled": true,
+    "required_log_fields": [
+      "request_id",
+      "proposal_id",
+      "template_effects",
+      "llm_effects",
+      "validation_result",
+      "failed_rules",
+      "fallback_applied",
+      "timestamp"
+    ],
+    "retention_days": 180
+  },
+  "safety": {
+    "max_generation_retries": 2,
+    "timeout_ms": 4000,
+    "reject_non_json_output": true,
+    "reject_unknown_fields": false
+  }
+}

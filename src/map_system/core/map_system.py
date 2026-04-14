@@ -113,6 +113,8 @@ class MapSystem:
                 "supply_factor": supply_factor,
                 "visibility": "visible"
             }
+            # 同步更新道路网络连接关系，确保路径计算可用
+            self.road_system.initialize(self.roads)
             # 更新可见性
             self.visibility_manager.update_visibility(self.cities, self.roads)
     
@@ -162,6 +164,12 @@ class MapSystem:
         """
         if city_id in self.cities:
             del self.cities[city_id]
+            # 删除与该城市关联的道路，并重建道路连接
+            self.roads = {
+                rid: road for rid, road in self.roads.items()
+                if road.get("start_city") != city_id and road.get("end_city") != city_id
+            }
+            self.road_system.initialize(self.roads)
             self.visibility_manager.update_visibility(self.cities, self.roads)
     
     def remove_road(self, road_id: str):
@@ -172,6 +180,7 @@ class MapSystem:
         """
         if road_id in self.roads:
             del self.roads[road_id]
+            self.road_system.initialize(self.roads)
             self.visibility_manager.update_visibility(self.cities, self.roads)
     
     def calculate_movement_path(self, start_city: str, end_city: str) -> List[str]:

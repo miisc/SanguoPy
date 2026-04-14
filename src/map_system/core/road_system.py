@@ -39,6 +39,7 @@ class RoadSystem:
             roads: 道路字典
         """
         self.roads = roads
+        self.city_connections = {}
         # 初始化城市连接关系
         for road_id, road in roads.items():
             start_city = road.get("start_city")

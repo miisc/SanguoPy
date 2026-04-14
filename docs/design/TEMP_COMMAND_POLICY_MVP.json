@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "name": "MVP Temporary Command Policy",
+    "version": "0.1.0",
+    "source_of_truth": "docs/design/CORE_SYSTEMS.md",
+    "scope": "mvp",
+    "notes": [
+      "Only military and intelligence temporary commands are allowed outside court meeting.",
+      "Non-whitelist commands must be rejected.",
+      "All numeric values are configuration-level defaults for MVP."
+    ]
+  },
+  "authority": {
+    "resource_name": "zhaoling_authority",
+    "max_value": 100,
+    "initial_value": 50,
+    "monthly_recovery": {
+      "timing": "month_start_day_1",
+      "rate": 0.05,
+      "rounding": "half_up",
+      "formula": "recover = ROUND(current * 0.05)",
+      "cap_after_recovery": true
+    },
+    "spend_rules": {
+      "check_order": [
+        "whitelist_and_trigger",
+        "authority_balance",
+        "cooldown_and_quota",
+        "apply_cost_and_execute"
+      ],
+      "allow_negative": false,
+      "reject_when_insufficient": true
+    }
+  },
+  "global_limits": {
+    "cost_per_command": 10,
+    "same_type_cooldown_xun": 1,
+    "max_commands_per_xun_mode": "dynamic_by_current_authority",
+    "max_commands_per_xun_formula": "FLOOR(current_authority / cost_per_command)",
+    "min_commands_per_xun": 0
+  },
+  "whitelist": [
+    {
+      "command_id": "cmd_border_emergency_response",
+      "name": "边关急袭应对令",
+      "category": "military",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "border_city_under_siege",
+          "enemy_force_near_border"
+        ]
+      }
+    },
+    {
+      "command_id": "cmd_supply_line_recovery",
+      "name": "粮道中断处置令",
+      "category": "military",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "main_supply_route_blocked",
+          "army_supply_less_than_1_xun"
+        ]
+      }
+    },
+    {
+      "command_id": "cmd_disaster_relief_emergency",
+      "name": "重大灾害赈济令",
+      "category": "intelligence",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "drought_index_high",
+          "flood_level_major",
+          "epidemic_outbreak"
+        ]
+      }
+    },
+    {
+      "command_id": "cmd_rebellion_suppression",
+      "name": "叛乱与哗变平定令",
+      "category": "military",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "local_rebellion_active",
+          "army_mutiny_active"
+        ]
+      }
+    },
+    {
+      "command_id": "cmd_enemy_capital_intel_urgent",
+      "name": "敌都与战略通道情报急令",
+      "category": "intelligence",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "intel_enemy_capital_mobilization",
+          "chokepoint_status_changed"
+        ]
+      }
+    },
+    {
+      "command_id": "cmd_multi_front_alert",
+      "name": "外敌联合征兆警戒令",
+      "category": "intelligence",
+      "allowed_outside_court": true,
+      "cost": 10,
+      "cooldown_xun": 1,
+      "quota_per_xun": null,
+      "trigger_rules": {
+        "any_of": [
+          "multi_front_enemy_movement",
+          "alliance_threat_signal"
+        ]
+      }
+    }
+  ],
+  "validation": {
+    "reject_non_whitelist": true,
+    "reject_wrong_category": true,
+    "reject_when_trigger_not_met": true,
+    "reject_when_over_quota": true,
+    "reject_when_in_cooldown": true,
+    "reject_when_cost_drives_negative": true
+  }
+}

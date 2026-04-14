@@ -1,0 +1,941 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "total": 30,
+    "categories": ["military", "economy", "diplomacy", "internal"],
+    "source_of_truth": "docs/design/CORE_SYSTEMS.md"
+  },
+  "topics": [
+    {
+      "id": "military_expansion",
+      "category": "military",
+      "title": "扩军备战",
+      "description": "邻国频繁调动军队，边境安全受到威胁，是否应该扩大军队规模？",
+      "background": "邻国频繁调动军队，边境安全受到威胁。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "expand_army",
+          "title": "大规模扩军",
+          "description": "招募新兵，扩大军队规模，增强国防力量。",
+          "effects": {},
+          "dimension_effects": { "military": 10, "economy": -6, "public_order": -2 }
+        },
+        {
+          "id": "defensive_focus",
+          "title": "加强防御",
+          "description": "不增加军队数量，但加强城防建设。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "economy": -3, "diplomacy": 1 }
+        },
+        {
+          "id": "diplomatic_solution",
+          "title": "外交斡旋",
+          "description": "通过外交手段缓解紧张局势，避免军事对抗。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 6, "military": -3, "economy": 1 }
+        }
+      ]
+    },
+    {
+      "id": "pass_garrison",
+      "category": "military",
+      "title": "关隘驻守",
+      "description": "虎牢关地处要冲，近日探报显示敌方有异动，是否增兵驻守？",
+      "background": "虎牢关扼守中原咽喉，斥候来报，关外出现大队敌军旗帜，形势紧迫。",
+      "has_location": true,
+      "related_position": [27, 26],
+      "options": [
+        {
+          "id": "reinforce_pass",
+          "title": "增兵驻守",
+          "description": "从各处调兵，大规模增援虎牢关守军，严阵以待。",
+          "effects": {},
+          "dimension_effects": { "military": 8, "economy": -5, "public_order": -1 }
+        },
+        {
+          "id": "hold_current",
+          "title": "维持现状",
+          "description": "关隘现有守军尚可应对，静观其变，待敌意图明朗再行定夺。",
+          "effects": {},
+          "dimension_effects": { "military": 2, "diplomacy": -1 }
+        },
+        {
+          "id": "send_scouts",
+          "title": "遣使侦察",
+          "description": "派出精锐斥候深入敌境，摸清虚实后再作部署。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 3, "military": -1, "economy": -1 }
+        }
+      ]
+    },
+    {
+      "id": "field_camp_policy",
+      "category": "military",
+      "title": "屯田制推行",
+      "description": "军队长期驻扎边境，粮草供应困难，是否推行军屯以解决军粮问题？",
+      "background": "边境驻军粮食补给线过长，军粮消耗巨大，影响军队战斗力。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_tuntian",
+          "title": "全面推行屯田",
+          "description": "大规模推行军屯，士兵亦兵亦农，就地解决粮食问题。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "economy": 6, "technology": -2 }
+        },
+        {
+          "id": "partial_tuntian",
+          "title": "局部试行屯田",
+          "description": "在部分驻军中试行屯田，逐步推广。",
+          "effects": {},
+          "dimension_effects": { "military": 3, "economy": 3, "technology": -1 }
+        },
+        {
+          "id": "reject_tuntian",
+          "title": "维持传统补给",
+          "description": "保持现行补给体系，集中精力训练军队。",
+          "effects": {},
+          "dimension_effects": { "military": -2, "economy": -3, "technology": 2 }
+        }
+      ]
+    },
+    {
+      "id": "weapon_manufacturing",
+      "category": "military",
+      "title": "军器监造",
+      "description": "军队装备老旧，是否应当大力投入兵器制造以提升战斗力？",
+      "background": "与敌国交战中暴露出兵器铠甲不足的问题，将士呼声强烈。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "major_forge",
+          "title": "大力铸造",
+          "description": "拨专款设军器监，大量铸造刀剑弓弩，全军换装。",
+          "effects": {},
+          "dimension_effects": { "military": 8, "technology": 5, "economy": -8 }
+        },
+        {
+          "id": "moderate_forge",
+          "title": "适度改良",
+          "description": "重点改良现有装备，优先供应精锐部队。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "technology": 2, "economy": -4 }
+        },
+        {
+          "id": "halt_forge",
+          "title": "暂缓制造",
+          "description": "当前财力不足，暂缓大规模兵器制造，维持现状。",
+          "effects": {},
+          "dimension_effects": { "economy": 3, "military": -3, "technology": -1 }
+        }
+      ]
+    },
+    {
+      "id": "general_promotion",
+      "category": "military",
+      "title": "将领擢升",
+      "description": "数位将领立有战功，朝中对如何论功行赏争议不断，是否大规模晋升？",
+      "background": "近期战事中多名将领表现突出，但晋升名额有限，各方争功。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "generous_promotion",
+          "title": "论功大赏",
+          "description": "按战功大力晋升将领，激励士气。",
+          "effects": {},
+          "dimension_effects": { "military": 6, "public_order": 3, "economy": -3 }
+        },
+        {
+          "id": "merit_based",
+          "title": "能力优先",
+          "description": "以综合能力而非单次战功为主要晋升标准。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "technology": 2, "public_order": -2 }
+        },
+        {
+          "id": "defer_promotion",
+          "title": "暂缓升职",
+          "description": "目前局势复杂，暂缓大规模晋升，待时局稳定再议。",
+          "effects": {},
+          "dimension_effects": { "public_order": -3, "military": -2, "economy": 2 }
+        }
+      ]
+    },
+    {
+      "id": "army_training",
+      "category": "military",
+      "title": "军队操练",
+      "description": "近期久无大战，军队战斗力有所下滑，是否加强操练？",
+      "background": "太平岁月使士兵懈怠，将领反映战力参差不齐，需整顿军纪。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "intensive_drill",
+          "title": "精兵强训",
+          "description": "推行严格的军事操练制度，提升整体战斗力。",
+          "effects": {},
+          "dimension_effects": { "military": 10, "economy": -5, "public_order": -3 }
+        },
+        {
+          "id": "regular_drill",
+          "title": "常规操练",
+          "description": "维持定期操练，保持军队基本战斗力。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "economy": -2, "public_order": -1 }
+        },
+        {
+          "id": "reduce_drill",
+          "title": "减少操练",
+          "description": "减轻士兵负担，将资源用于其他方面。",
+          "effects": {},
+          "dimension_effects": { "economy": 3, "public_order": 2, "military": -4 }
+        }
+      ]
+    },
+    {
+      "id": "navy_construction",
+      "category": "military",
+      "title": "水军建设",
+      "description": "南方水网纵横，敌军水师强大，是否组建或扩充水军力量？",
+      "background": "江河湖泊地带多次吃亏于敌军水师，朝臣纷纷建言发展水军。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "build_navy",
+          "title": "组建水军",
+          "description": "拨专款募集水兵，建造战船，组建一支精锐水师。",
+          "effects": {},
+          "dimension_effects": { "military": 8, "economy": -8, "technology": 3 }
+        },
+        {
+          "id": "expand_navy",
+          "title": "扩充现有水军",
+          "description": "在现有水师基础上增添船只、训练兵员。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "economy": -4, "technology": 1 }
+        },
+        {
+          "id": "skip_navy",
+          "title": "暂不建设",
+          "description": "当前财力有限，优先发展陆军，水军建设暂缓。",
+          "effects": {},
+          "dimension_effects": { "economy": 4, "military": -3, "technology": -1 }
+        }
+      ]
+    },
+    {
+      "id": "border_fortification",
+      "category": "military",
+      "title": "边境城防加固",
+      "description": "边境数城城墙年久失修，防御薄弱，是否拨款大规模整修？",
+      "background": "边城屡受侵扰，守将上书称城墙残破难以固守，急需修缮。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_fortify",
+          "title": "全面加固",
+          "description": "拨专款对边境所有城池城防进行全面整修加固。",
+          "effects": {},
+          "dimension_effects": { "military": 7, "economy": -6, "public_order": 2 }
+        },
+        {
+          "id": "key_fortify",
+          "title": "重点防御",
+          "description": "选取战略要地优先整修，其余城池暂缓。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "economy": -3, "diplomacy": 1 }
+        },
+        {
+          "id": "minimal_repair",
+          "title": "最低维护",
+          "description": "仅对最危险的缺口进行应急修补，节省开支。",
+          "effects": {},
+          "dimension_effects": { "economy": 2, "military": -2, "public_order": -1 }
+        }
+      ]
+    },
+    {
+      "id": "tax_policy",
+      "category": "economy",
+      "title": "赋税政策调整",
+      "description": "国库紧张，是否应该调整税率以平衡财政？",
+      "background": "由于连年征战，国库空虚，急需增加财政收入。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "raise_tax",
+          "title": "提高税率",
+          "description": "将税率提高一成，增加国库收入，但可能引发民怨。",
+          "effects": {},
+          "dimension_effects": { "economy": 6, "public_order": -5, "military": 1 }
+        },
+        {
+          "id": "maintain_tax",
+          "title": "维持现状",
+          "description": "保持当前税率不变，维持民心稳定。",
+          "effects": {},
+          "dimension_effects": { "public_order": 1, "economy": -1 }
+        },
+        {
+          "id": "reduce_tax",
+          "title": "降低税率",
+          "description": "降低税率以安抚民心，但国库收入会减少。",
+          "effects": {},
+          "dimension_effects": { "public_order": 6, "economy": -5, "diplomacy": 1 }
+        }
+      ]
+    },
+    {
+      "id": "agricultural_reform",
+      "category": "economy",
+      "title": "农业发展政策",
+      "description": "今年收成不佳，粮食储备不足，是否制定专项农业扶持政策？",
+      "background": "今年收成不佳，粮食储备不足，需要制定农业发展政策。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "irrigation_project",
+          "title": "兴修水利",
+          "description": "投资修建灌溉设施，提高农业产量。",
+          "effects": {},
+          "dimension_effects": { "economy": 7, "technology": 3, "military": -3 }
+        },
+        {
+          "id": "farmer_support",
+          "title": "扶持农桑",
+          "description": "减免农民赋税，鼓励农业生产。",
+          "effects": {},
+          "dimension_effects": { "economy": 5, "public_order": 4, "military": -2 }
+        },
+        {
+          "id": "technology_improvement",
+          "title": "推广农技",
+          "description": "推广先进农耕技术，提高单位产量。",
+          "effects": {},
+          "dimension_effects": { "economy": 4, "technology": 5, "military": -2 }
+        }
+      ]
+    },
+    {
+      "id": "trade_policy",
+      "category": "economy",
+      "title": "对外贸易政策",
+      "description": "周边国家商品丰富，是否应当开放边境贸易以增加收入？",
+      "background": "周边国家商品丰富，开放贸易可增加收入，但也带来安全隐患。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "open_trade",
+          "title": "开放贸易",
+          "description": "开放边境贸易，增加财政收入，改善外交关系。",
+          "effects": {},
+          "dimension_effects": { "economy": 7, "diplomacy": 4, "military": -3 }
+        },
+        {
+          "id": "controlled_trade",
+          "title": "管制贸易",
+          "description": "限制贸易范围，确保国家安全。",
+          "effects": {},
+          "dimension_effects": { "economy": 3, "diplomacy": 1, "military": -1 }
+        },
+        {
+          "id": "closed_policy",
+          "title": "闭关锁国",
+          "description": "禁止对外贸易，自给自足。",
+          "effects": {},
+          "dimension_effects": { "military": 3, "economy": -5, "diplomacy": -4 }
+        }
+      ]
+    },
+    {
+      "id": "salt_iron_control",
+      "category": "economy",
+      "title": "盐铁专营",
+      "description": "盐铁乃民生之本，是否收归官府专营以充实国库？",
+      "background": "盐铁商贩私吞暴利，国库未能从中获益，官员建议收归专营。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_monopoly",
+          "title": "全面专营",
+          "description": "将盐铁贸易全部收归国有，由官府统一管控。",
+          "effects": {},
+          "dimension_effects": { "economy": 8, "public_order": -4, "diplomacy": -2 }
+        },
+        {
+          "id": "partial_monopoly",
+          "title": "部分专营",
+          "description": "仅对精盐和铁器实行专营，其余放开市场。",
+          "effects": {},
+          "dimension_effects": { "economy": 4, "public_order": -2, "technology": 1 }
+        },
+        {
+          "id": "open_market",
+          "title": "维持市场",
+          "description": "保持自由市场，通过征税获取收益。",
+          "effects": {},
+          "dimension_effects": { "economy": -2, "public_order": 3, "diplomacy": 2 }
+        }
+      ]
+    },
+    {
+      "id": "commerce_route",
+      "category": "economy",
+      "title": "开辟商路",
+      "description": "西域商路久已荒废，是否派兵护送商队重开通商之路？",
+      "background": "西域商路年久失修，劫匪横行，商贾不愿涉足，朝廷可从中获益丰厚。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "open_route",
+          "title": "大力开辟",
+          "description": "派专门军队护卫商路，并给予商人优惠政策。",
+          "effects": {},
+          "dimension_effects": { "economy": 8, "diplomacy": 5, "military": -4 }
+        },
+        {
+          "id": "moderate_route",
+          "title": "逐步推进",
+          "description": "先修缮道路，吸引商队，再逐步扩大规模。",
+          "effects": {},
+          "dimension_effects": { "economy": 4, "diplomacy": 2, "military": -2 }
+        },
+        {
+          "id": "cancel_route",
+          "title": "暂不开辟",
+          "description": "当前局势不稳，开辟商路风险过大，暂缓此议。",
+          "effects": {},
+          "dimension_effects": { "military": 2, "economy": -3, "diplomacy": -2 }
+        }
+      ]
+    },
+    {
+      "id": "disaster_relief",
+      "category": "economy",
+      "title": "灾后赈济",
+      "description": "南方数郡遭受水患，灾民流离失所，朝廷是否发粮赈灾？",
+      "background": "南方连降暴雨，良田被淹，百姓颗粒无收，民间已有流民四散。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_relief",
+          "title": "大规模赈济",
+          "description": "开仓放粮，大规模赈济灾民，安定民心。",
+          "effects": {},
+          "dimension_effects": { "public_order": 8, "economy": -7, "diplomacy": 2 }
+        },
+        {
+          "id": "moderate_relief",
+          "title": "适度赈济",
+          "description": "发放适量钱粮，维持灾区基本稳定。",
+          "effects": {},
+          "dimension_effects": { "public_order": 4, "economy": -3, "military": -1 }
+        },
+        {
+          "id": "no_relief",
+          "title": "暂不赈济",
+          "description": "国库紧张，令地方自行解决，朝廷暂无力发放。",
+          "effects": {},
+          "dimension_effects": { "economy": 3, "public_order": -7, "diplomacy": -2 }
+        }
+      ]
+    },
+    {
+      "id": "currency_reform",
+      "category": "economy",
+      "title": "货币整顿",
+      "description": "市面上私铸劣币横行，扰乱市场秩序，是否整顿货币制度？",
+      "background": "各地私铸铜钱，成色不足，导致物价混乱，商贾怨声载道。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "strict_reform",
+          "title": "严厉整顿",
+          "description": "下令收缴劣币，重铸官钱，统一货币标准。",
+          "effects": {},
+          "dimension_effects": { "economy": 6, "public_order": -4, "technology": 2 }
+        },
+        {
+          "id": "gradual_reform",
+          "title": "逐步推行",
+          "description": "分批收兑旧币，避免引起恐慌，缓慢过渡到新制。",
+          "effects": {},
+          "dimension_effects": { "economy": 3, "public_order": -1, "technology": 1 }
+        },
+        {
+          "id": "no_reform",
+          "title": "暂不整顿",
+          "description": "当前多事之秋，货币整顿会影响市面稳定，暂缓。",
+          "effects": {},
+          "dimension_effects": { "public_order": 2, "economy": -3, "technology": -1 }
+        }
+      ]
+    },
+    {
+      "id": "granary_expansion",
+      "category": "economy",
+      "title": "粮仓扩建",
+      "description": "各地粮仓容量不足，无法应对大规模军事行动，是否扩建粮仓？",
+      "background": "数次出征因粮食储备不足而被迫班师，大臣建议大规模扩建粮仓。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "build_major_granaries",
+          "title": "大规模扩建",
+          "description": "在全国战略要地新建大型粮仓，储备充足军粮。",
+          "effects": {},
+          "dimension_effects": { "economy": -5, "military": 7, "public_order": 3 }
+        },
+        {
+          "id": "build_key_granaries",
+          "title": "重点扩建",
+          "description": "仅在军事重要据点扩建粮仓，集中保障军需。",
+          "effects": {},
+          "dimension_effects": { "economy": -3, "military": 4, "public_order": 1 }
+        },
+        {
+          "id": "no_granary",
+          "title": "暂缓建设",
+          "description": "将资金用于更紧迫的事务，粮仓扩建推后处理。",
+          "effects": {},
+          "dimension_effects": { "economy": 2, "military": -3, "public_order": -2 }
+        }
+      ]
+    },
+    {
+      "id": "peace_envoy",
+      "category": "diplomacy",
+      "title": "遣使求和",
+      "description": "与敌国长期对峙，消耗巨大，是否派遣使节寻求停战？",
+      "background": "连年征战，国力损耗严重，朝中主和派认为应暂时停战休养。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "send_envoy",
+          "title": "主动遣使",
+          "description": "派出使节，主动与敌国展开停战谈判。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 8, "military": -4, "economy": 3 }
+        },
+        {
+          "id": "conditional_peace",
+          "title": "附条件谈和",
+          "description": "提出停战条件，争取在有利条件下实现停战。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 4, "military": -2, "public_order": 1 }
+        },
+        {
+          "id": "reject_peace",
+          "title": "拒绝议和",
+          "description": "坚持军事压力，不接受停战谈判。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "diplomacy": -6, "economy": -3 }
+        }
+      ]
+    },
+    {
+      "id": "military_alliance",
+      "category": "diplomacy",
+      "title": "合纵结盟",
+      "description": "邻国提议结成军事同盟共抗强敌，是否接受联盟邀约？",
+      "background": "强敌横行，单凭一己之力难以抗衡，邻国主动来使寻求结盟。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_alliance",
+          "title": "全面结盟",
+          "description": "与邻国缔结军事同盟，互通军情，共同出兵。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 8, "military": 4, "economy": -3 }
+        },
+        {
+          "id": "limited_alliance",
+          "title": "有限合作",
+          "description": "达成局部合作协议，保留独立外交选择权。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 4, "military": 2, "economy": -1 }
+        },
+        {
+          "id": "reject_alliance",
+          "title": "拒绝结盟",
+          "description": "保持独立立场，不与任何势力结成正式同盟。",
+          "effects": {},
+          "dimension_effects": { "military": -3, "diplomacy": -4, "economy": 2 }
+        }
+      ]
+    },
+    {
+      "id": "royal_marriage",
+      "category": "diplomacy",
+      "title": "联姻结好",
+      "description": "邻国提出以通婚方式加深两国关系，是否接受联姻提议？",
+      "background": "两国摩擦不断，邻国君主遣使，希望通过联姻化解嫌隙、世代交好。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "accept_marriage",
+          "title": "接受联姻",
+          "description": "同意联姻，以皇室成员结亲，巩固两国友好关系。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 10, "military": -2, "public_order": 1 }
+        },
+        {
+          "id": "conditional_marriage",
+          "title": "附条件接受",
+          "description": "提出领土或贸易条件，在达成协议后方才联姻。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 5, "economy": 3, "military": -2 }
+        },
+        {
+          "id": "reject_marriage",
+          "title": "婉言拒绝",
+          "description": "以各种理由婉拒联姻提议，维持现状。",
+          "effects": {},
+          "dimension_effects": { "military": 2, "diplomacy": -5, "public_order": -1 }
+        }
+      ]
+    },
+    {
+      "id": "military_intimidation",
+      "category": "diplomacy",
+      "title": "陈兵示威",
+      "description": "边境紧张局势升级，是否调遣大军陈兵边境以示威慑？",
+      "background": "邻国使节态度傲慢，边境摩擦不断，朝中主战派认为应展示实力。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "major_show_of_force",
+          "title": "大规模陈兵",
+          "description": "调集重兵屯于边境，举行大规模军事演习，展示国威。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "diplomacy": -6, "economy": -4 }
+        },
+        {
+          "id": "moderate_show",
+          "title": "适度示威",
+          "description": "小规模调兵，释放信号但不激化矛盾。",
+          "effects": {},
+          "dimension_effects": { "military": 2, "diplomacy": -2, "economy": -1 }
+        },
+        {
+          "id": "no_show",
+          "title": "保持克制",
+          "description": "不作军事反应，通过外交渠道表达立场。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 4, "military": -3, "public_order": 1 }
+        }
+      ]
+    },
+    {
+      "id": "intel_exchange",
+      "category": "diplomacy",
+      "title": "情报互换",
+      "description": "盟友提议互通共同敌人的军情，是否同意情报交换协议？",
+      "background": "共同的敌人令双方都感到威胁，盟友希望建立情报共享机制。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "full_exchange",
+          "title": "全面互换",
+          "description": "建立定期情报交换机制，共享全部军事动向。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 7, "military": 3, "technology": -2 }
+        },
+        {
+          "id": "limited_exchange",
+          "title": "有限共享",
+          "description": "仅分享对双方皆有利的情报，保留核心机密。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 3, "military": 2, "technology": -1 }
+        },
+        {
+          "id": "reject_exchange",
+          "title": "拒绝共享",
+          "description": "以保密为由拒绝情报互换，维持独立情报体系。",
+          "effects": {},
+          "dimension_effects": { "technology": 2, "diplomacy": -4, "military": -1 }
+        }
+      ]
+    },
+    {
+      "id": "enemy_defector",
+      "category": "diplomacy",
+      "title": "招降纳叛",
+      "description": "敌国有将领私下传书，有意归降，是否接纳并给予优待？",
+      "background": "敌国内部不稳，一员大将因受排挤，暗中遣人传递归降意向。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "welcome_defector",
+          "title": "热情接纳",
+          "description": "给予降将高官厚禄，展示宽仁之道，鼓励更多人归降。",
+          "effects": {},
+          "dimension_effects": { "military": 5, "diplomacy": 4, "economy": -3 }
+        },
+        {
+          "id": "cautious_acceptance",
+          "title": "谨慎接纳",
+          "description": "接受归降，但先观察一段时间再给予实职。",
+          "effects": {},
+          "dimension_effects": { "military": 3, "diplomacy": 2, "public_order": -1 }
+        },
+        {
+          "id": "reject_defector",
+          "title": "拒绝招降",
+          "description": "疑其有诈，拒绝接受归降，加强防范。",
+          "effects": {},
+          "dimension_effects": { "military": -2, "diplomacy": -3, "public_order": 2 }
+        }
+      ]
+    },
+    {
+      "id": "border_pact",
+      "category": "diplomacy",
+      "title": "边境盟约",
+      "description": "长期边境冲突耗损两国国力，邻国提议签订互不侵犯条约，是否签署？",
+      "background": "边境小规模冲突不断，消耗巨大却无法取得决定性优势，对方主动提议停战。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "sign_pact",
+          "title": "签署盟约",
+          "description": "签订正式的边境互不侵犯条约，休战休养。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 8, "economy": 4, "military": -3 }
+        },
+        {
+          "id": "conditional_pact",
+          "title": "有条件签署",
+          "description": "要求对方归还部分争议领土后再签署条约。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 3, "economy": 2, "military": -1 }
+        },
+        {
+          "id": "reject_pact",
+          "title": "拒绝签署",
+          "description": "认为条约对己方不利，拒绝签署，继续强硬立场。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "diplomacy": -6, "economy": -3 }
+        }
+      ]
+    },
+    {
+      "id": "infrastructure_construction",
+      "category": "internal",
+      "title": "基础设施建设",
+      "description": "国内基础设施落后，道路水利年久失修，是否大力投入建设？",
+      "background": "国内基础设施落后，影响经济发展和民生改善。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "major_investment",
+          "title": "大规模投资",
+          "description": "投入大量资金建设道路、水利等基础设施。",
+          "effects": {},
+          "dimension_effects": { "economy": 7, "public_order": 4, "military": -5 }
+        },
+        {
+          "id": "moderate_investment",
+          "title": "适度投资",
+          "description": "投入适量资金，重点建设关键基础设施。",
+          "effects": {},
+          "dimension_effects": { "economy": 4, "public_order": 2, "military": -2 }
+        },
+        {
+          "id": "delay_investment",
+          "title": "暂缓投资",
+          "description": "暂时搁置基础设施建设，优先保障军费开支。",
+          "effects": {},
+          "dimension_effects": { "military": 3, "economy": -3, "public_order": -2 }
+        }
+      ]
+    },
+    {
+      "id": "education_reform",
+      "category": "internal",
+      "title": "教育改革",
+      "description": "国家缺乏治理人才，是否应当投资教育以培养栋梁之才？",
+      "background": "国家缺乏治理人才，需要重视教育培养。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "establish_schools",
+          "title": "兴办学校",
+          "description": "在全国设立学校，培养人才。",
+          "effects": {},
+          "dimension_effects": { "technology": 7, "public_order": 3, "economy": -4 }
+        },
+        {
+          "id": "talent_recruitment",
+          "title": "招贤纳士",
+          "description": "发布招贤令，广纳天下人才。",
+          "effects": {},
+          "dimension_effects": { "technology": 4, "diplomacy": 2, "economy": -3 }
+        },
+        {
+          "id": "civil_exam",
+          "title": "科举取士",
+          "description": "建立科举制度，公开选拔优秀人才。",
+          "effects": {},
+          "dimension_effects": { "technology": 5, "public_order": 2, "economy": -3 }
+        }
+      ]
+    },
+    {
+      "id": "law_reform",
+      "category": "internal",
+      "title": "刑法整顿",
+      "description": "各地盗贼横行，律法松弛，是否推行严刑峻法以整肃纲纪？",
+      "background": "地方官员执法不力，豪强横行，百姓苦不堪言，治安每况愈下。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "strict_law",
+          "title": "严刑峻法",
+          "description": "颁布严厉法令，重惩盗贼，大规模整顿治安。",
+          "effects": {},
+          "dimension_effects": { "public_order": 8, "technology": -2, "diplomacy": -3 }
+        },
+        {
+          "id": "moderate_law",
+          "title": "适度整顿",
+          "description": "整顿执法队伍，严惩重犯，轻罪从宽处理。",
+          "effects": {},
+          "dimension_effects": { "public_order": 4, "technology": -1, "economy": 1 }
+        },
+        {
+          "id": "lenient_law",
+          "title": "宽仁执政",
+          "description": "以教化为主，减轻刑罚，争取民心。",
+          "effects": {},
+          "dimension_effects": { "public_order": -2, "diplomacy": 3, "economy": 2 }
+        }
+      ]
+    },
+    {
+      "id": "official_review",
+      "category": "internal",
+      "title": "官员考核",
+      "description": "官场腐败，尸位素餐之辈众多，是否推行大规模官员考核并汰换庸员？",
+      "background": "地方官员中多有贪腐、无能之辈，致使政令不通、民怨积累。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "strict_review",
+          "title": "严格考核",
+          "description": "大规模考核官员，不合格者一律免职，能者上位。",
+          "effects": {},
+          "dimension_effects": { "public_order": 5, "technology": 3, "diplomacy": -4 }
+        },
+        {
+          "id": "gradual_review",
+          "title": "逐步推进",
+          "description": "先对重要职位官员考核，逐步推广到全体官员。",
+          "effects": {},
+          "dimension_effects": { "public_order": 3, "technology": 2, "diplomacy": -2 }
+        },
+        {
+          "id": "no_review",
+          "title": "维持现状",
+          "description": "官场变动易引起朝野震荡，暂缓大规模考核。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 2, "public_order": -3, "technology": -2 }
+        }
+      ]
+    },
+    {
+      "id": "population_migration",
+      "category": "internal",
+      "title": "人口迁移",
+      "description": "边境人口稀少，内地人口稠密，是否强制推行人口迁移充实边疆？",
+      "background": "边境地区人口不足，难以有效开发；内地则有大量流民游荡，需要安置。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "forced_migration",
+          "title": "强制迁移",
+          "description": "下令强制内地民众迁往边境屯垦，充实边疆人口。",
+          "effects": {},
+          "dimension_effects": { "military": 4, "economy": 3, "public_order": -7 }
+        },
+        {
+          "id": "incentive_migration",
+          "title": "优惠鼓励",
+          "description": "给予迁往边境者土地和税赋优惠，鼓励自愿迁移。",
+          "effects": {},
+          "dimension_effects": { "military": 2, "economy": 2, "public_order": -2 }
+        },
+        {
+          "id": "no_migration",
+          "title": "不予推行",
+          "description": "迁移扰民，且效果存疑，不予推行此议。",
+          "effects": {},
+          "dimension_effects": { "public_order": 3, "military": -2, "economy": -1 }
+        }
+      ]
+    },
+    {
+      "id": "ritual_reform",
+      "category": "internal",
+      "title": "礼制修订",
+      "description": "现行礼制多有不合时宜之处，是否着手修订以彰显朝廷威仪？",
+      "background": "礼部奏称现行礼制承自前朝，多有不当之处，建议修订以符合现实。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "major_reform",
+          "title": "大规模修订",
+          "description": "全面修订礼制，重新厘定朝廷礼仪规范，彰显国威。",
+          "effects": {},
+          "dimension_effects": { "public_order": 5, "diplomacy": 4, "economy": -4 }
+        },
+        {
+          "id": "minor_reform",
+          "title": "局部调整",
+          "description": "仅对明显不当之处进行调整，其余维持原制。",
+          "effects": {},
+          "dimension_effects": { "public_order": 2, "diplomacy": 2, "economy": -1 }
+        },
+        {
+          "id": "no_reform",
+          "title": "维持旧制",
+          "description": "礼制稳定事关朝廷威信，不宜轻易更改。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": -2, "public_order": -2, "technology": 1 }
+        }
+      ]
+    },
+    {
+      "id": "talent_system",
+      "category": "internal",
+      "title": "选才制度",
+      "description": "现行选才机制以门第为重，寒门才俊难以出头，是否改革？",
+      "background": "九品中正制使门阀把持官位，真正的人才难以出头，朝野均有怨言。",
+      "has_location": false,
+      "options": [
+        {
+          "id": "merit_system",
+          "title": "唯才是举",
+          "description": "不论出身门第，一律以才能和功绩为选官标准。",
+          "effects": {},
+          "dimension_effects": { "technology": 8, "public_order": -4, "diplomacy": -2 }
+        },
+        {
+          "id": "mixed_system",
+          "title": "才德并重",
+          "description": "兼顾门第与才能，适当提高寒门入仕比例。",
+          "effects": {},
+          "dimension_effects": { "technology": 4, "public_order": -2, "economy": 1 }
+        },
+        {
+          "id": "maintain_system",
+          "title": "维持原制",
+          "description": "维持现行九品中正制，稳固门阀支持。",
+          "effects": {},
+          "dimension_effects": { "diplomacy": 3, "technology": -4, "public_order": 2 }
+        }
+      ]
+    }
+  ]
+}

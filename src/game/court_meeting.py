@@ -10,6 +10,8 @@ import random
 from typing import Dict, List, Optional, Any
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from game.llm_integration import get_llm_instance
+
 
 class CourtMeetingSystem(QObject):
     """朝会系统类"""
@@ -18,286 +20,18 @@ class CourtMeetingSystem(QObject):
     meeting_started = pyqtSignal(dict)  # 朝会开始信号
     meeting_completed = pyqtSignal(dict)  # 朝会完成信号
     
-    def __init__(self, game_model):
+    def __init__(self, game_model, llm_integration=None):
         """初始化朝会系统"""
         super().__init__()
         self.game_model = game_model
         self.current_meeting = None
         self.meeting_active = False
+        self.llm_integration = llm_integration
         
-        # 朝会议题模板
-        self.topic_templates = [
-            {
-                "id": "tax_increase",
-                "title": "增税政策",
-                "description": "国库紧张，是否应该提高税率以增加收入？",
-                "background": "由于连年征战，国库空虚，急需增加财政收入。",
-                "has_location": False,
-                "options": [
-                    {
-                        "id": "increase_tax",
-                        "title": "提高税率",
-                        "description": "将税率提高10%，可增加国库收入，但可能降低民忠。",
-                        "effects": {
-                            "gold": 2000,
-                            "people": -5
-                        }
-                    },
-                    {
-                        "id": "maintain_tax",
-                        "title": "维持现状",
-                        "description": "保持当前税率不变，维持民心稳定。",
-                        "effects": {
-                            "gold": 0,
-                            "people": 0
-                        }
-                    },
-                    {
-                        "id": "reduce_tax",
-                        "title": "降低税率",
-                        "description": "降低税率以安抚民心，但国库收入会减少。",
-                        "effects": {
-                            "gold": -1000,
-                            "people": 5
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "military_expansion",
-                "title": "军事扩张",
-                "description": "是否应该扩大军队规模以增强国防实力？",
-                "background": "邻国频繁调动军队，边境安全受到威胁。",
-                "related_city": "luoyang",
-                "has_location": True,
-                "options": [
-                    {
-                        "id": "expand_army",
-                        "title": "扩军备战",
-                        "description": "招募新兵，扩大军队规模，增强国防力量。",
-                        "effects": {
-                            "soldiers": 2000,
-                            "gold": -3000,
-                            "food": -5000
-                        }
-                    },
-                    {
-                        "id": "defensive_focus",
-                        "title": "加强防御",
-                        "description": "不增加军队数量，但加强城防建设。",
-                        "effects": {
-                            "gold": -2000,
-                            "defense": 5
-                        }
-                    },
-                    {
-                        "id": "diplomatic_solution",
-                        "title": "外交解决",
-                        "description": "通过外交手段缓解紧张局势，避免军事对抗。",
-                        "effects": {
-                            "gold": -1000,
-                            "diplomacy": 5
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "infrastructure",
-                "title": "基础设施建设",
-                "description": "是否应该投资基础设施建设以促进经济发展？",
-                "background": "国内基础设施落后，影响经济发展和民生改善。",
-                "related_city": "chengdu",
-                "has_location": True,
-                "options": [
-                    {
-                        "id": "major_investment",
-                        "title": "大规模投资",
-                        "description": "投入大量资金建设道路、水利等基础设施。",
-                        "effects": {
-                            "gold": -5000,
-                            "economy": 5,
-                            "people": 3
-                        }
-                    },
-                    {
-                        "id": "moderate_investment",
-                        "title": "适度投资",
-                        "description": "投入适量资金，重点建设关键基础设施。",
-                        "effects": {
-                            "gold": -2500,
-                            "economy": 3,
-                            "people": 2
-                        }
-                    },
-                    {
-                        "id": "delay_investment",
-                        "title": "暂缓投资",
-                        "description": "暂时搁置基础设施建设，优先保障军费开支。",
-                        "effects": {
-                            "gold": 0,
-                            "military": 2
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "agricultural_development",
-                "title": "农业发展",
-                "description": "是否应该投资农业发展以提高粮食产量？",
-                "background": "今年收成不佳，粮食储备不足，需要制定农业发展政策。",
-                "has_location": False,
-                "options": [
-                    {
-                        "id": "irrigation_project",
-                        "title": "兴修水利",
-                        "description": "投资修建灌溉设施，提高农业产量。",
-                        "effects": {
-                            "gold": -3000,
-                            "food": 5000,
-                            "economy": 3
-                        }
-                    },
-                    {
-                        "id": "farmer_support",
-                        "title": "扶持农桑",
-                        "description": "减免农民赋税，鼓励农业生产。",
-                        "effects": {
-                            "gold": -2000,
-                            "food": 3000,
-                            "people": 5
-                        }
-                    },
-                    {
-                        "id": "technology_improvement",
-                        "title": "推广农技",
-                        "description": "推广先进农耕技术，提高单位产量。",
-                        "effects": {
-                            "gold": -1500,
-                            "tech": 3,
-                            "food": 2000
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "trade_policy",
-                "title": "贸易政策",
-                "description": "是否应该开放对外贸易以增加收入？",
-                "background": "周边国家商品丰富，开放贸易可增加收入，但也带来风险。",
-                "has_location": False,
-                "options": [
-                    {
-                        "id": "open_trade",
-                        "title": "开放贸易",
-                        "description": "开放边境贸易，增加财政收入。",
-                        "effects": {
-                            "gold": 4000,
-                            "diplomacy": 3,
-                            "defense": -2
-                        }
-                    },
-                    {
-                        "id": "controlled_trade",
-                        "title": "管制贸易",
-                        "description": "限制贸易范围，确保国家安全。",
-                        "effects": {
-                            "gold": 2000,
-                            "diplomacy": 1,
-                            "defense": 2
-                        }
-                    },
-                    {
-                        "id": "closed_policy",
-                        "title": "闭关锁国",
-                        "description": "禁止对外贸易，自给自足。",
-                        "effects": {
-                            "gold": -1000,
-                            "defense": 3,
-                            "economy": -3
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "education_reform",
-                "title": "教育改革",
-                "description": "是否应该投资教育以培养人才？",
-                "background": "国家缺乏治理人才，需要重视教育培养。",
-                "has_location": False,
-                "options": [
-                    {
-                        "id": "establish_schools",
-                        "title": "兴办学校",
-                        "description": "在全国设立学校，培养人才。",
-                        "effects": {
-                            "gold": -2500,
-                            "tech": 5,
-                            "people": 2
-                        }
-                    },
-                    {
-                        "id": "talent_recruitment",
-                        "title": "招贤纳士",
-                        "description": "发布招贤令，吸引天下人才。",
-                        "effects": {
-                            "gold": -2000,
-                            "people": -2,
-                            "tech": 3
-                        }
-                    },
-                    {
-                        "id": "civil_service_exam",
-                        "title": "科举取士",
-                        "description": "建立科举制度，选拔优秀人才。",
-                        "effects": {
-                            "gold": -1500,
-                            "tech": 3,
-                            "people": 1
-                        }
-                    }
-                ]
-            },
-            {
-                "id": "pass_garrison",
-                "title": "关隘驻守",
-                "description": "虎牢关地处要冲，近日探报显示敌方有异动，是否增兵驻守？",
-                "background": "虎牢关扼守中原咽喉，地势险要，历来为兵家必争之地。斥候来报，关外出现大队敌军旗帜，形势紧迫。",
-                "has_location": True,
-                "related_position": [27, 26],
-                "options": [
-                    {
-                        "id": "reinforce_pass",
-                        "title": "增兵驻守",
-                        "description": "从各处调兵，大规模增援虎牢关守军，严阵以待。",
-                        "effects": {
-                            "soldiers": -3000,
-                            "gold": -2000,
-                            "defense": 8
-                        }
-                    },
-                    {
-                        "id": "hold_current",
-                        "title": "维持现状",
-                        "description": "关隘现有守军尚可应对，静观其变，待敌意图明朗再行定夺。",
-                        "effects": {
-                            "defense": 2,
-                            "gold": 0
-                        }
-                    },
-                    {
-                        "id": "send_scouts",
-                        "title": "遣使侦察",
-                        "description": "派出精锐斥候深入敌境，摸清虚实后再作部署，避免劳师动众。",
-                        "effects": {
-                            "gold": -500,
-                            "defense": 1,
-                            "diplomacy": 1
-                        }
-                    }
-                ]
-            }
-        ]
-    
+        # 朝会议题模板 — 从 COURT_TOPICS_MVP.json 加载
+        from game.court_topic_loader import CourtTopicLoader
+        self.topic_templates = CourtTopicLoader.load_topics()
+
     def can_hold_meeting(self) -> bool:
         """检查是否可以召开朝会"""
         if self.meeting_active:
@@ -345,6 +79,7 @@ class CourtMeetingSystem(QObject):
             "decision": None,
             "completed": False
         }
+        self.current_meeting["decisions"] = []
         
         self.meeting_active = True
         
@@ -395,11 +130,11 @@ class CourtMeetingSystem(QObject):
         
         return self.current_meeting
     
-    def get_emergency_meeting_data(self) -> Optional[Dict[str, Any]]:
+    def get_emergency_meeting_data(self, event_template=None) -> Optional[Dict[str, Any]]:
         """获取紧急朝会数据"""
         # 如果没有活跃的朝会，创建一个新的紧急朝会
         if not self.meeting_active:
-            self._create_emergency_meeting()
+            self._create_emergency_meeting(event_template=event_template)
         
         return self.current_meeting
     
@@ -428,7 +163,8 @@ class CourtMeetingSystem(QObject):
             "topic_title": current_topic["title"],
             "option_id": option_id,
             "option_title": selected_option["title"],
-            "effects": selected_option["effects"]
+            "effects": selected_option["effects"],
+            "dimension_effects": selected_option.get("dimension_effects", {}),
         }
         
         # 添加到决策列表
@@ -462,18 +198,30 @@ class CourtMeetingSystem(QObject):
             # 所有议题都已处理完毕
             self.current_meeting["completed"] = True
             self.meeting_active = False
-            
+
             # 完成朝会
             meeting_result = self.current_meeting.copy()
             resource_changes = self._calculate_total_effects()
             meeting_result["resource_changes"] = resource_changes
-            
+
+            # 将五维效果聚合并应用
+            total_dimension_effects = self._calculate_total_dimension_effects()
+            if total_dimension_effects:
+                self.game_model.apply_dimension_effects(total_dimension_effects)
+
+            # 将决策效果应用到 GameModel
+            if resource_changes:
+                self.game_model.update_resources(resource_changes)
+
+            # 记录朝会结果，使 can_hold_meeting 能正确检测
+            self.game_model.add_court_meeting(meeting_result)
+
             # 发出朝会完成信号
             self.meeting_completed.emit(meeting_result)
-            
+
             # 重置当前朝会
             self.current_meeting = None
-            
+
             return {
                 "success": True,
                 "decision": decision,
@@ -481,7 +229,7 @@ class CourtMeetingSystem(QObject):
                 "message": "所有议题处理完毕，朝会结束",
                 "resource_changes": resource_changes
             }
-    
+
     def _calculate_total_effects(self) -> Dict[str, int]:
         """计算所有决策的总体效果"""
         total_effects = {}
@@ -496,6 +244,15 @@ class CourtMeetingSystem(QObject):
                         total_effects[key] = value
         
         return total_effects
+
+    def _calculate_total_dimension_effects(self) -> Dict[str, int]:
+        """聚合所有月度决策的 dimension_effects。"""
+        total: Dict[str, int] = {}
+        if self.current_meeting and "decisions" in self.current_meeting:
+            for decision in self.current_meeting["decisions"]:
+                for key, value in decision.get("dimension_effects", {}).items():
+                    total[key] = total.get(key, 0) + value
+        return total
     
     def make_emergency_decision(self, option_id: str) -> Dict[str, Any]:
         """做出紧急朝会决策"""
@@ -548,20 +305,22 @@ class CourtMeetingSystem(QObject):
         selected_topics = random.sample(self.topic_templates, min(num_topics, len(self.topic_templates)))
         return selected_topics
     
-    def _create_emergency_meeting(self):
+    def _create_emergency_meeting(self, event_template=None):
         """创建紧急朝会"""
         # 获取游戏时间信息
         game_info = self.game_model.get_game_info()
         year = game_info.get("year", 190)
         season = game_info.get("season", 1)
         
+        topic = event_template if event_template is not None else self._select_emergency_topic()
+
         # 创建紧急朝会数据
         self.current_meeting = {
             "id": f"emergency_{year}_{season}_{random.randint(1000, 9999)}",
             "type": "emergency",
             "year": year,
             "season": season,
-            "topic": self._select_emergency_topic(),
+            "topic": topic,
             "participants": [],
             "opinions": [],
             "completed": False
@@ -709,178 +468,6 @@ class CourtMeetingSystem(QObject):
         # 随机选择一个议题
         return random.choice(emergency_topics)
     
-
-    
-    def get_emergency_meeting_data(self) -> Optional[Dict[str, Any]]:
-        """获取紧急朝会数据"""
-        # 如果没有活跃的朝会，创建一个新的紧急朝会
-        if not self.meeting_active:
-            self._create_emergency_meeting()
-        
-        return self.current_meeting
-    
-
-    
-    def make_emergency_decision(self, option_id: str) -> Dict[str, Any]:
-        """做出紧急朝会决策"""
-        return self.make_decision(option_id)
-    
-
-    
-    def _create_emergency_meeting(self):
-        """创建紧急朝会"""
-        # 获取游戏时间信息
-        game_info = self.game_model.get_game_info()
-        year = game_info.get("year", 190)
-        season = game_info.get("season", 1)
-        
-        # 创建紧急朝会数据
-        self.current_meeting = {
-            "id": f"emergency_{year}_{season}_{random.randint(1000, 9999)}",
-            "type": "emergency",
-            "year": year,
-            "season": season,
-            "topic": self._select_emergency_topic(),
-            "participants": [],
-            "opinions": [],
-            "completed": False
-        }
-        
-        # 获取参与者和意见
-        self.current_meeting["participants"] = self._get_participants()
-        self.current_meeting["opinions"] = self._generate_opinions(
-            self.current_meeting["topic"], 
-            self.current_meeting["participants"]
-        )
-        
-        # 标记朝会为活跃状态
-        self.meeting_active = True
-        
-        # 发出朝会开始信号
-        self.meeting_started.emit(self.current_meeting)
-    
-    def _select_monthly_topic(self) -> Dict[str, Any]:
-        """选择月度朝会议题"""
-        # 月度朝会议题模板
-        monthly_topics = [
-            {
-                "id": "monthly_tax",
-                "title": "月度财政报告",
-                "description": "本月财政收入与支出情况如何？是否需要调整财政政策？",
-                "background": "每月初，需要审查上月财政情况，决定本月财政政策。",
-                "options": [
-                    {
-                        "id": "increase_tax",
-                        "title": "增加税收",
-                        "description": "提高税率，增加国库收入，但可能影响民心。",
-                        "effects": {"economy": 5, "people": -3}
-                    },
-                    {
-                        "id": "maintain_tax",
-                        "title": "维持现状",
-                        "description": "保持当前税率，维持稳定。",
-                        "effects": {"economy": 0, "people": 0}
-                    },
-                    {
-                        "id": "reduce_tax",
-                        "title": "减税惠民",
-                        "description": "降低税率，减轻民众负担，提升民心。",
-                        "effects": {"economy": -3, "people": 5}
-                    }
-                ]
-            },
-            {
-                "id": "monthly_military",
-                "title": "月度军事报告",
-                "description": "本月军事训练与防务情况如何？是否需要加强军事力量？",
-                "background": "每月初，需要审查军事状况，决定本月军事政策。",
-                "options": [
-                    {
-                        "id": "increase_military",
-                        "title": "加强军备",
-                        "description": "增加军事投入，提升军队战斗力。",
-                        "effects": {"military": 5, "economy": -3}
-                    },
-                    {
-                        "id": "maintain_military",
-                        "title": "维持现状",
-                        "description": "保持当前军事投入水平。",
-                        "effects": {"military": 0, "economy": 0}
-                    },
-                    {
-                        "id": "reduce_military",
-                        "title": "裁减军备",
-                        "description": "减少军事投入，节省开支。",
-                        "effects": {"military": -3, "economy": 3}
-                    }
-                ]
-            }
-        ]
-        
-        # 随机选择一个议题
-        return random.choice(monthly_topics)
-    
-    def _select_emergency_topic(self) -> Dict[str, Any]:
-        """选择紧急朝会议题"""
-        # 紧急朝会议题模板
-        emergency_topics = [
-            {
-                "id": "emergency_disaster",
-                "title": "自然灾害",
-                "description": "境内发生自然灾害，需要紧急应对！",
-                "background": "突如其来的自然灾害威胁着民众的生命财产安全，需要立即采取行动。",
-                "options": [
-                    {
-                        "id": "emergency_relief",
-                        "title": "紧急赈灾",
-                        "description": "立即调拨物资赈灾，稳定民心。",
-                        "effects": {"people": 5, "economy": -5}
-                    },
-                    {
-                        "id": "organized_relief",
-                        "title": "有序赈灾",
-                        "description": "组织有序的赈灾工作，平衡各方利益。",
-                        "effects": {"people": 2, "economy": -2}
-                    },
-                    {
-                        "id": "minimal_relief",
-                        "title": "最低限度赈灾",
-                        "description": "只提供最基本的赈灾，节省资源。",
-                        "effects": {"people": -2, "economy": 2}
-                    }
-                ]
-            },
-            {
-                "id": "emergency_border",
-                "title": "边境警报",
-                "description": "边境发现敌军活动，需要紧急应对！",
-                "background": "边境哨所传来紧急军情，发现敌军大规模调动，可能威胁边境安全。",
-                "options": [
-                    {
-                        "id": "immediate_defense",
-                        "title": "立即防御",
-                        "description": "立即调集军队加强边境防御。",
-                        "effects": {"military": 3, "economy": -3}
-                    },
-                    {
-                        "id": "diplomatic_response",
-                        "title": "外交回应",
-                        "description": "通过外交途径解决边境紧张局势。",
-                        "effects": {"diplomacy": 3, "military": -1}
-                    },
-                    {
-                        "id": "monitor_situation",
-                        "title": "监视局势",
-                        "description": "密切监视敌军动向，暂不采取行动。",
-                        "effects": {"military": -2, "diplomacy": 1}
-                    }
-                ]
-            }
-        ]
-        
-        # 随机选择一个议题
-        return random.choice(emergency_topics)
-    
     def make_decision(self, option_id: str) -> Dict[str, Any]:
         """做出朝会决策"""
         if not self.meeting_active or not self.current_meeting:
@@ -924,6 +511,10 @@ class CourtMeetingSystem(QObject):
             resource_changes["food"] = selected_option["effects"]["food"]
         if "soldiers" in selected_option["effects"]:
             resource_changes["soldiers"] = selected_option["effects"]["soldiers"]
+
+        dimension_effects = selected_option.get("dimension_effects", {})
+        if dimension_effects:
+            self.game_model.apply_dimension_effects(dimension_effects)
         
         # 完成朝会
         self.meeting_active = False
@@ -960,7 +551,8 @@ class CourtMeetingSystem(QObject):
                     "title": general.get("title", "武将"),
                     "loyalty": general.get("loyalty", 80),
                     "intelligence": general.get("intelligence", 50),
-                    "politics": general.get("politics", 50)
+                    "politics": general.get("politics", 50),
+                    "strength": general.get("strength", 50)
                 })
         
         return participants
@@ -1016,14 +608,13 @@ class CourtMeetingSystem(QObject):
         
         preferred_option = topic["options"][preferred_option_index]
         
-        # 生成意见文本
-        opinion_texts = [
-            f"臣认为应当{preferred_option['title']}，这样可以{preferred_option['description'][:20]}...",
-            f"陛下，臣以为{preferred_option['title']}是明智之举，因为{preferred_option['description'][:20]}...",
-            f"根据当前形势，臣建议{preferred_option['title']}，此举将{preferred_option['description'][:20]}..."
-        ]
-        
-        opinion_text = random.choice(opinion_texts)
+        personality = self._get_personality_description(participant)
+        opinion_text = self._generate_opinion_text_with_llm(
+            topic,
+            participant,
+            preferred_option,
+            personality
+        )
         
         return {
             "participant_id": participant["id"],
@@ -1031,25 +622,59 @@ class CourtMeetingSystem(QObject):
             "opinion": opinion_text,
             "preferred_option": preferred_option["id"],
             "support_level": random.randint(60, 100),  # 支持度
-            "personality": self._get_personality_description(participant),
+            "personality": personality,
             "expertise": self._get_expertise_description(topic)
         }
+
+    def _generate_opinion_text_with_llm(
+        self,
+        topic: Dict[str, Any],
+        participant: Dict[str, Any],
+        preferred_option: Dict[str, Any],
+        personality: str,
+    ) -> str:
+        """使用LLM生成意见文本，失败时回退到模板文本。"""
+        fallback = (
+            f"臣{participant['name']}认为应当{preferred_option['title']}，"
+            f"以{personality}之见，此举可{preferred_option['description'][:20]}..."
+        )
+
+        try:
+            llm = self.llm_integration or get_llm_instance()
+            system_prompt = (
+                "你是三国朝会中的官员发言生成器。"
+                "请根据官员人设与议题，输出一句古风且简洁的建言，不超过60字。"
+            )
+            user_prompt = (
+                f"官员：{participant['name']}（性格：{personality}）。\n"
+                f"议题：{topic['title']}。\n"
+                f"倾向方案：{preferred_option['title']}。\n"
+                f"方案说明：{preferred_option['description']}。"
+            )
+            result = llm.generate_with_system_prompt(system_prompt, user_prompt)
+            if isinstance(result, str) and result.strip():
+                return result.strip()
+            return fallback
+        except Exception:
+            return fallback
     
     def _get_personality_description(self, participant):
-        """获取官员性格描述"""
-        personalities = [
-            "忠诚可靠",
-            "足智多谋",
-            "刚直不阿",
-            "善于理财",
-            "精通军事",
-            "博学多才",
-            "善于外交",
-            "勤政爱民",
-            "经验丰富",
-            "年轻有为"
+        """获取官员性格描述（基于属性的稳定映射）"""
+        intelligence = participant.get("intelligence", 50)
+        politics = participant.get("politics", 50)
+        strength = participant.get("strength", 50)
+        loyalty = participant.get("loyalty", 50)
+
+        axes = [
+            ("足智多谋", intelligence),
+            ("善于理政", politics),
+            ("勇武果决", strength),
+            ("忠诚可靠", loyalty),
         ]
-        return random.choice(personalities)
+
+        # 按固定优先级打破平局，确保同一人物每次返回一致
+        axes.sort(key=lambda item: item[1], reverse=True)
+        return axes[0][0]
     
     def _get_expertise_description(self, topic):
         """获取官员专业领域描述"""

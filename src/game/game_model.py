@@ -32,6 +32,9 @@ class GameModel:
                 "population": 100000,
                 "soldiers": 5000
             },
+            "court_resources": {
+                "zhaoling_authority": 50
+            },
             "factions": {
                 "wei": {"name": "魏", "color": "#0000FF", "capital": "luoyang"},
                 "shu": {"name": "蜀", "color": "#008000", "capital": "chengdu"},
@@ -68,20 +71,66 @@ class GameModel:
     def get_resources(self) -> Dict[str, int]:
         """获取资源信息"""
         return self.game_data["resources"]
+
+    def get_court_resources(self) -> Dict[str, int]:
+        """获取宫廷资源信息。"""
+        return self.game_data["court_resources"]
+
+    def _recover_monthly_zhaoling_authority(self):
+        """每月初一恢复诏令权威，按 5% 四舍五入并封顶 100。"""
+        court_resources = self.game_data.setdefault("court_resources", {"zhaoling_authority": 50})
+        current = court_resources.get("zhaoling_authority", 50)
+        recovery = int((current * 0.05) + 0.5)
+        court_resources["zhaoling_authority"] = min(100, current + recovery)
     
     def update_resources(self, resources: Dict[str, int]):
         """更新资源"""
         for key, value in resources.items():
             if key in self.game_data["resources"]:
                 self.game_data["resources"][key] += value
+
+    def apply_dimension_effects(self, effects: Dict[str, int]):
+        """应用五维数值变化并裁剪到 [0, 100]。"""
+        dimensions = self.game_data.setdefault(
+            "dimensions",
+            {
+                "military": 50,
+                "economy": 50,
+                "technology": 50,
+                "public_order": 50,
+                "diplomacy": 50,
+            },
+        )
+
+        valid_keys = {"military", "economy", "technology", "public_order", "diplomacy"}
+        for key, delta in effects.items():
+            if key in valid_keys:
+                new_value = dimensions.get(key, 50) + delta
+                dimensions[key] = max(0, min(100, new_value))
     
     def get_factions(self) -> Dict[str, Dict[str, str]]:
         """获取势力信息"""
         return self.game_data["factions"]
     
     def get_cities(self) -> Dict[str, Dict[str, Any]]:
-        """获取城池信息"""
+        """获取城池信息（全量原始数据，不做迷雾过滤）。"""
         return self.game_data["cities"]
+
+    def get_cities_for_player(self, faction: str) -> Dict[str, Dict[str, Any]]:
+        """返回城池信息，对迷雾中的非己方城市屏蔽 faction 与 soldiers。
+        MVP 可见规则：city["faction"] == faction 即为己方可见城市。
+        返回副本，不修改 game_data。
+        """
+        result = {}
+        for city_id, city in self.game_data["cities"].items():
+            if city.get("faction") == faction:
+                result[city_id] = dict(city)
+            else:
+                masked = dict(city)
+                masked["faction"] = None
+                masked["soldiers"] = None
+                result[city_id] = masked
+        return result
     
     def get_generals(self) -> Dict[str, Dict[str, Any]]:
         """获取武将信息"""
@@ -104,9 +153,11 @@ class GameModel:
         
         # 日期推进
         day += 1
+        crossed_month = False
         if day > 30:  # 假设每个月都是30天
             day = 1
             month += 1
+            crossed_month = True
             if month > 12:
                 month = 1
                 year += 1
@@ -118,6 +169,9 @@ class GameModel:
         self.game_data["game_info"]["season"] = season
         self.game_data["game_info"]["year"] = year
         self.game_data["game_info"]["turn"] += 1
+
+        if crossed_month:
+            self._recover_monthly_zhaoling_authority()
     
     def save_game(self, filename: str):
         """保存游戏"""
