@@ -16,11 +16,12 @@ class GameController(QObject):
     """游戏控制器类"""
     
     # 信号定义
-    game_updated = pyqtSignal()  # 游戏状态更新信号
-    resources_updated = pyqtSignal(dict)  # 资源更新信号
-    time_advanced = pyqtSignal(dict)  # 时间推进信号
-    monthly_court_due = pyqtSignal(dict)  # 月度朝会到期信号
+    game_updated = pyqtSignal()          # 游戏状态更新信号
+    resources_updated = pyqtSignal(dict) # 资源更新信号
+    time_advanced = pyqtSignal(dict)     # 时间推进信号
+    monthly_court_due = pyqtSignal(dict) # 月度朝会到期信号
     court_meeting_requested = pyqtSignal()  # 朝会请求信号
+    emergency_event_triggered = pyqtSignal(dict)  # 紧急事件触发（含朝会议题）
     
     def __init__(self):
         """初始化游戏控制器"""
@@ -54,23 +55,45 @@ class GameController(QObject):
         self.game_updated.emit()
         self.resources_updated.emit(self.game_model.get_resources())
     
+    # 粮草告急朝会议题（三个处置选项）
+    _FOOD_SHORTAGE_TOPIC = {
+        "id": "food_shortage_crisis",
+        "title": "粮草告急",
+        "description": "军粮已耗尽，大军面临断粮危机，请陛下速做决断！",
+        "background": "粮道受阻或储备耗尽，若不速决，恐生哗变。",
+        "category": "economy",
+        "options": [
+            {"id": "emergency_levy", "text": "紧急征粮", "description": "耗费 3000 金，紧急筹粮 10000 石",
+             "effects": {"gold": -3000, "food": 10000}, "dimension_effects": {"economy": -3, "public_order": -2}},
+            {"id": "reduce_troops", "text": "裁减兵员", "description": "裁军 1000，减少每旬消耗",
+             "effects": {"soldiers": -1000}, "dimension_effects": {"military": -5, "public_order": -3}},
+            {"id": "hold_position", "text": "坚守待援", "description": "维持现状，士气将下滑",
+             "effects": {}, "dimension_effects": {"military": -8, "public_order": -5}},
+        ],
+    }
+
     def advance_time(self):
         """推进游戏时间"""
-        # 获取当前游戏信息
         current_info = self.game_model.get_game_info()
         current_day = current_info["day"]
-        
+        meetings_before = len(self.game_model.game_data["court_meetings"])
+
         self.game_model.advance_time()
-        
-        # 获取更新后的游戏信息
+
         new_info = self.game_model.get_game_info()
         new_day = new_info["day"]
-        
+
+        # 检查是否有新增粮草告急事件
+        meetings_after = self.game_model.game_data["court_meetings"]
+        if len(meetings_after) > meetings_before:
+            new_meeting = meetings_after[-1]
+            if new_meeting.get("event_type") == "food_shortage":
+                self.emergency_event_triggered.emit(self._FOOD_SHORTAGE_TOPIC)
+
         # 检查是否是月初一，触发月度朝会信号
-        if new_day == 1 and current_day != 1:  # 从非月初变为月初，表示跨月
+        if new_day == 1 and current_day != 1:
             self.monthly_court_due.emit(new_info)
-        
-        # 发出时间推进信号
+
         self.time_advanced.emit(new_info)
         self.game_updated.emit()
     
@@ -114,9 +137,9 @@ class GameController(QObject):
         """获取月度朝会数据"""
         return self.court_meeting_system.get_monthly_meeting_data()
     
-    def get_emergency_court_data(self):
+    def get_emergency_court_data(self, event_template=None):
         """获取紧急朝会数据"""
-        return self.court_meeting_system.get_emergency_meeting_data()
+        return self.court_meeting_system.get_emergency_meeting_data(event_template=event_template)
     
     def get_participant_info(self, participant_id):
         """获取参与官员的详细信息"""

@@ -158,6 +158,7 @@ class WeiyangMainWindow(QMainWindow):
         self.game_controller.resources_updated.connect(self._on_resources_updated)
         self.game_controller.game_updated.connect(self._on_game_updated)
         self.game_controller.monthly_court_due.connect(self._on_monthly_court_due)
+        self.game_controller.emergency_event_triggered.connect(self._on_emergency_event_triggered)
         self.game_controller.court_meeting_system.meeting_completed.connect(self._on_court_meeting_completed)
         # 监听朝会开始信号以便触发地图聚焦等联动
         try:
@@ -290,8 +291,15 @@ class WeiyangMainWindow(QMainWindow):
     
     def _on_monthly_court_due(self, game_info):
         """处理月度朝会到期"""
-        # 直接开始月度朝会，不弹出提示框
         self._start_monthly_court_in_panel()
+
+    def _on_emergency_event_triggered(self, topic: dict):
+        """处理自动触发的紧急事件（如粮草告急），以该议题召开紧急朝会。"""
+        self._pause_game()
+        meeting_data = self.game_controller.get_emergency_court_data(event_template=topic)
+        if meeting_data:
+            self.map_frame.show_court_meeting(meeting_data)
+            self._show_status(f"⚠ 紧急：{topic.get('title', '紧急朝会')}")
     
     def _start_monthly_court_in_panel(self):
         """在信息面板中开始月度朝会"""
@@ -524,7 +532,8 @@ class WeiyangMainWindow(QMainWindow):
         soldiers = resources.get("soldiers", 0)
         court_res = self.game_controller.game_model.get_court_resources()
         intel = court_res.get("intel_points", 0)
-        self.map_frame.update_resource_info(gold, food, intel, soldiers)
+        authority = court_res.get("zhaoling_authority", 50)
+        self.map_frame.update_resource_info(gold, food, intel, soldiers, authority)
     
     def _on_game_updated(self):
         """处理游戏状态更新"""

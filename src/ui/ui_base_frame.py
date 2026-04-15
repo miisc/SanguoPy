@@ -43,6 +43,7 @@ class UIBaseFrame(QWidget):
         self.gold_label = None
         self.food_label = None
         self.intel_label = None
+        self.authority_label = None
         self.faction_panel_label = None
         
         # 朝会状态
@@ -264,11 +265,13 @@ class UIBaseFrame(QWidget):
         self.gold_label = QLabel("钱: 10000")
         self.food_label = QLabel("粮: 50000")
         self.intel_label = QLabel("情报: 20")
+        self.authority_label = QLabel("诏令: 50")
         resource_layout.addWidget(resource_label)
         resource_sub_layout = QVBoxLayout()
         resource_sub_layout.addWidget(self.gold_label)
         resource_sub_layout.addWidget(self.food_label)
         resource_sub_layout.addWidget(self.intel_label)
+        resource_sub_layout.addWidget(self.authority_label)
         resource_layout.addLayout(resource_sub_layout)
         status_layout.addLayout(resource_layout)
 
@@ -495,12 +498,14 @@ class UIBaseFrame(QWidget):
         self.month_label.setText(str(month))
         self.day_label.setText(str(day))
     
-    def update_resource_info(self, gold, food, intel=0, soldiers=0):
+    def update_resource_info(self, gold, food, intel=0, soldiers=0, authority=50):
         """更新资源信息。food < 2旬供给时橙色警告，= 0 时红色。"""
         self.gold_label.setText(f"钱: {gold}")
         self.food_label.setText(f"粮: {food}")
         if self.intel_label:
             self.intel_label.setText(f"情报: {intel}")
+        if self.authority_label:
+            self.authority_label.setText(f"诏令: {authority}")
         xun_cost = soldiers if soldiers > 0 else 1
         if food == 0:
             self.food_label.setStyleSheet("color: #ff4444; font-weight: bold;")
@@ -508,6 +513,11 @@ class UIBaseFrame(QWidget):
             self.food_label.setStyleSheet("color: #ffa500; font-weight: bold;")
         else:
             self.food_label.setStyleSheet("")
+        # 诏令权威 < 20 时橙色警告
+        if authority < 20:
+            self.authority_label.setStyleSheet("color: #ffa500; font-weight: bold;")
+        else:
+            self.authority_label.setStyleSheet("")
 
     def update_faction_panel(self, faction_dims: dict, factions: dict):
         """更新势力态势面板。faction_dims: {id: {military,economy,...}}，factions: {id: {name,...}}"""
