@@ -42,6 +42,7 @@ class UIBaseFrame(QWidget):
         self.season_label = None
         self.gold_label = None
         self.food_label = None
+        self.intel_label = None
         
         # 朝会状态
         self.court_meeting_active = False
@@ -261,10 +262,12 @@ class UIBaseFrame(QWidget):
         resource_label = QLabel("国库:")
         self.gold_label = QLabel("钱: 10000")
         self.food_label = QLabel("粮: 50000")
+        self.intel_label = QLabel("情报: 20")
         resource_layout.addWidget(resource_label)
         resource_sub_layout = QVBoxLayout()
         resource_sub_layout.addWidget(self.gold_label)
         resource_sub_layout.addWidget(self.food_label)
+        resource_sub_layout.addWidget(self.intel_label)
         resource_layout.addLayout(resource_sub_layout)
         status_layout.addLayout(resource_layout)
         
@@ -478,10 +481,12 @@ class UIBaseFrame(QWidget):
         self.month_label.setText(str(month))
         self.day_label.setText(str(day))
     
-    def update_resource_info(self, gold, food):
+    def update_resource_info(self, gold, food, intel=0):
         """更新资源信息"""
         self.gold_label.setText(f"钱: {gold}")
         self.food_label.setText(f"粮: {food}")
+        if self.intel_label:
+            self.intel_label.setText(f"情报: {intel}")
     
     def show_info(self, title, content):
         """在信息面板显示信息"""
@@ -877,6 +882,8 @@ class UIBaseFrame(QWidget):
             self.gold_label.setFont(info_font)
         if hasattr(self, 'food_label') and self.food_label:
             self.food_label.setFont(info_font)
+        if hasattr(self, 'intel_label') and self.intel_label:
+            self.intel_label.setFont(info_font)
     
     def _on_save_game(self):
         """处理保存游戏按钮点击事件"""
