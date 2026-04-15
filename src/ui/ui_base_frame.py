@@ -43,6 +43,7 @@ class UIBaseFrame(QWidget):
         self.gold_label = None
         self.food_label = None
         self.intel_label = None
+        self.faction_panel_label = None
         
         # 朝会状态
         self.court_meeting_active = False
@@ -270,7 +271,20 @@ class UIBaseFrame(QWidget):
         resource_sub_layout.addWidget(self.intel_label)
         resource_layout.addLayout(resource_sub_layout)
         status_layout.addLayout(resource_layout)
-        
+
+        # 势力态势
+        faction_sep = QLabel("──────────")
+        faction_sep.setAlignment(Qt.AlignCenter)
+        status_layout.addWidget(faction_sep)
+        faction_title = QLabel("势力态势")
+        faction_title.setAlignment(Qt.AlignCenter)
+        faction_title.setFont(QFont("", 9, QFont.Bold))
+        status_layout.addWidget(faction_title)
+        self.faction_panel_label = QLabel("加载中...")
+        self.faction_panel_label.setWordWrap(True)
+        self.faction_panel_label.setAlignment(Qt.AlignLeft)
+        status_layout.addWidget(self.faction_panel_label)
+
         layout.addWidget(status_frame)
         
         # 信息显示区域
@@ -487,7 +501,6 @@ class UIBaseFrame(QWidget):
         self.food_label.setText(f"粮: {food}")
         if self.intel_label:
             self.intel_label.setText(f"情报: {intel}")
-        # 食粮警告色
         xun_cost = soldiers if soldiers > 0 else 1
         if food == 0:
             self.food_label.setStyleSheet("color: #ff4444; font-weight: bold;")
@@ -495,6 +508,21 @@ class UIBaseFrame(QWidget):
             self.food_label.setStyleSheet("color: #ffa500; font-weight: bold;")
         else:
             self.food_label.setStyleSheet("")
+
+    def update_faction_panel(self, faction_dims: dict, factions: dict):
+        """更新势力态势面板。faction_dims: {id: {military,economy,...}}，factions: {id: {name,...}}"""
+        if not hasattr(self, "faction_panel_label") or not self.faction_panel_label:
+            return
+        FACTION_ORDER = ["wei", "shu", "wu"]
+        DIM_ABBR = {"military": "军", "economy": "经", "diplomacy": "外"}
+        lines = []
+        for fid in FACTION_ORDER:
+            dims = faction_dims.get(fid, {})
+            name = factions.get(fid, {}).get("name", fid)
+            vals = " ".join(f"{abbr}{dims.get(key, 50):.0f}"
+                            for key, abbr in DIM_ABBR.items())
+            lines.append(f"{name}: {vals}")
+        self.faction_panel_label.setText("\n".join(lines))
     
     def show_info(self, title, content):
         """在信息面板显示信息"""

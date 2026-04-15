@@ -528,8 +528,10 @@ class WeiyangMainWindow(QMainWindow):
     
     def _on_game_updated(self):
         """处理游戏状态更新"""
-        # 可以在这里添加游戏状态更新的UI响应
-        pass
+        gm = self.game_controller.game_model
+        faction_dims = gm.game_data.get("faction_dimensions", {})
+        factions = gm.game_data.get("factions", {})
+        self.map_frame.update_faction_panel(faction_dims, factions)
     
     def _on_court_meeting_completed(self, meeting_result=None):
         """处理朝会完成"""
