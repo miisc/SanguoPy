@@ -73,15 +73,20 @@ class CourtTopDownMapWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(100)
-        # focal 为逻辑坐标中心点
         self._focal_x = MAP_W / 2
         self._focal_y = MAP_H / 2
         self._view_range = self.DEFAULT_VIEW_RANGE
-        # 可选高亮点（逻辑坐标）
         self._highlight_x = None
         self._highlight_y = None
+        # fog_data: {city_id: faction_str | None} — None 表示情报不足，显示为迷雾
+        self._fog_data: dict = {}
 
     # ── 公共接口 ──────────────────────────────
+
+    def set_fog_data(self, fog_data: dict):
+        """传入可见性数据 {city_id: faction|None}，None 表示迷雾城市。"""
+        self._fog_data = fog_data
+        self.update()
 
     def center_on_grid(self, gx: float, gy: float, view_range: int = DEFAULT_VIEW_RANGE):
         """以网格坐标 [gx, gy] 为中心，view_range 为视口半径（逻辑单位）。"""
@@ -190,7 +195,7 @@ class CourtTopDownMapWidget(QWidget):
             painter.drawText(int(px) - 18, int(py) + sz + 13, p["name"])
 
     def _draw_cities(self, painter: QPainter):
-        """绘制城市（方块 + 名称）。"""
+        """绘制城市（方块 + 名称）。迷雾城市显示为灰色问号。"""
         sz = 10
         font = QFont("", 9, QFont.Bold)
         painter.setFont(font)
@@ -198,7 +203,13 @@ class CourtTopDownMapWidget(QWidget):
             cx, cy = self._logical_to_widget(city["x"], city["y"])
             if not (-40 < cx < self.width() + 40 and -40 < cy < self.height() + 40):
                 continue
-            color = FACTION_COLORS.get(city["faction"], QColor(150, 150, 150))
+            # 情报层：fog_data 存在时使用动态势力，None 表示迷雾
+            if self._fog_data:
+                faction = self._fog_data.get(city_id)
+            else:
+                faction = city["faction"]
+            fogged = faction is None
+            color = QColor(100, 100, 100) if fogged else FACTION_COLORS.get(faction, QColor(150, 150, 150))
             # 城市方块
             painter.setBrush(QBrush(color))
             painter.setPen(QPen(Qt.black, 1.5))
@@ -208,15 +219,16 @@ class CourtTopDownMapWidget(QWidget):
             for dx, dy in [(-sz, 0), (sz, 0), (0, -sz), (0, sz)]:
                 painter.drawRect(int(cx + dx) - inset, int(cy + dy) - inset,
                                  inset * 2, inset * 2)
-            # 城市名称（白底黑字）
+            # 城市名称（迷雾时显示"???"）
             fm = QFontMetrics(font)
-            text_w = fm.horizontalAdvance(city["name"])
+            display_name = "???" if fogged else city["name"]
+            text_w = fm.horizontalAdvance(display_name)
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(QColor(255, 255, 255, 180)))
             painter.drawRect(int(cx) - text_w // 2 - 2, int(cy) + sz + 2,
                              text_w + 4, fm.height())
-            painter.setPen(QColor(20, 20, 20))
-            painter.drawText(int(cx) - text_w // 2, int(cy) + sz + 2 + fm.ascent(), city["name"])
+            painter.setPen(QColor(80, 80, 80) if fogged else QColor(20, 20, 20))
+            painter.drawText(int(cx) - text_w // 2, int(cy) + sz + 2 + fm.ascent(), display_name)
 
     def _draw_highlight(self, painter: QPainter):
         """绘制焦点位置的高亮标记（红色脉冲环 + 十字）。"""

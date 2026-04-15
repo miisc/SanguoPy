@@ -521,9 +521,10 @@ class WeiyangMainWindow(QMainWindow):
         """处理资源更新"""
         gold = resources.get("gold", 0)
         food = resources.get("food", 0)
+        soldiers = resources.get("soldiers", 0)
         court_res = self.game_controller.game_model.get_court_resources()
         intel = court_res.get("intel_points", 0)
-        self.map_frame.update_resource_info(gold, food, intel)
+        self.map_frame.update_resource_info(gold, food, intel, soldiers)
     
     def _on_game_updated(self):
         """处理游戏状态更新"""

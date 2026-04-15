@@ -481,12 +481,20 @@ class UIBaseFrame(QWidget):
         self.month_label.setText(str(month))
         self.day_label.setText(str(day))
     
-    def update_resource_info(self, gold, food, intel=0):
-        """更新资源信息"""
+    def update_resource_info(self, gold, food, intel=0, soldiers=0):
+        """更新资源信息。food < 2旬供给时橙色警告，= 0 时红色。"""
         self.gold_label.setText(f"钱: {gold}")
         self.food_label.setText(f"粮: {food}")
         if self.intel_label:
             self.intel_label.setText(f"情报: {intel}")
+        # 食粮警告色
+        xun_cost = soldiers if soldiers > 0 else 1
+        if food == 0:
+            self.food_label.setStyleSheet("color: #ff4444; font-weight: bold;")
+        elif food < xun_cost * 20:
+            self.food_label.setStyleSheet("color: #ffa500; font-weight: bold;")
+        else:
+            self.food_label.setStyleSheet("")
     
     def show_info(self, title, content):
         """在信息面板显示信息"""
@@ -559,6 +567,7 @@ class UIBaseFrame(QWidget):
                 self.court_map_view.setVisible(True)
                 self.court_map_view.center_on_grid(
                     int(related_pos[0]), int(related_pos[1]), view_range=250)
+                self._refresh_map_fog()
             else:
                 self.court_map_view.setVisible(False)
                 self.court_map_view.reset()
@@ -569,7 +578,18 @@ class UIBaseFrame(QWidget):
         self.court_decision_btn.setEnabled(False)  # 初始禁用，直到选择选项
         self.dismiss_btn.setVisible(False)
 
-    def update_court_meeting(self, meeting_data):
+    def _refresh_map_fog(self):
+        """从 game_controller 读取当前可见性，刷新地图迷雾。"""
+        if not self.court_map_view:
+            return
+        gc = getattr(self, "game_controller", None)
+        if not gc:
+            return
+        player_faction = gc.game_model.game_data["game_info"].get("current_faction", "wei")
+        cities = gc.game_model.get_cities_for_player(player_faction)
+        # faction=None 表示迷雾（未解锁情报的敌方城市）
+        fog_data = {city_id: city.get("faction") for city_id, city in cities.items()}
+        self.court_map_view.set_fog_data(fog_data)
         """更新朝会信息"""
         self.current_meeting_data = meeting_data
         
@@ -626,6 +646,7 @@ class UIBaseFrame(QWidget):
                 self.court_map_view.setVisible(True)
                 self.court_map_view.center_on_grid(
                     int(related_pos[0]), int(related_pos[1]), view_range=250)
+                self._refresh_map_fog()
             else:
                 self.court_map_view.setVisible(False)
                 self.court_map_view.reset()

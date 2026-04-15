@@ -283,6 +283,9 @@ class GameController(QObject):
         court_resources["zhaoling_authority"] = result["new_authority"]
         return result
 
+    # 各势力主城（用于情报指令目标）
+    _FACTION_CAPITALS = {"wei": "luoyang", "shu": "chengdu", "wu": "jianye"}
+
     def issue_command_from_policy(
         self,
         command_id: str,
@@ -312,7 +315,25 @@ class GameController(QObject):
             cooldown_xun=cooldown,
         )
         court_resources["zhaoling_authority"] = result["new_authority"]
+
+        if result.get("success"):
+            self._apply_intel_command_effect(command_id)
+
         return result
+
+    def _apply_intel_command_effect(self, command_id: str) -> None:
+        """情报类指令成功后解锁对应城市情报。"""
+        player_faction = self.game_model.game_data["game_info"].get("current_faction", "wei")
+        if command_id == "cmd_enemy_capital_intel_urgent":
+            # 解锁所有敌方主城，持续 3 个月
+            for faction, capital_id in self._FACTION_CAPITALS.items():
+                if faction != player_faction:
+                    self.game_model.unlock_city_intel(capital_id, duration_months=3, cost=0)
+        elif command_id == "cmd_multi_front_alert":
+            # 解锁所有敌方城市，持续 1 个月（更全面、时效更短）
+            for city_id, city in self.game_model.game_data["cities"].items():
+                if city.get("faction") != player_faction:
+                    self.game_model.unlock_city_intel(city_id, duration_months=1, cost=0)
 
     def push_event(self, event: dict) -> None:
         """向事件队列推入事件；若为重大事件，立即触发紧急朝会。"""
