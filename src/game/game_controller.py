@@ -34,7 +34,9 @@ class GameController(QObject):
         self._temp_command_quota_by_xun = {}
         self._event_queue = []
         self.temp_command_policy = TempCommandPolicy()
-        
+        self._current_xun = 0           # 全局旬计数，用于随机事件冷却
+        self._last_random_event_xun = -99  # 上次随机事件触发的旬
+
         # 连接朝会系统信号
         self.court_meeting_system.meeting_completed.connect(self._on_court_meeting_completed)
     
@@ -90,12 +92,38 @@ class GameController(QObject):
             if new_meeting.get("event_type") == "food_shortage":
                 self.emergency_event_triggered.emit(self._FOOD_SHORTAGE_TOPIC)
 
+        # 旬末：尝试触发随机重大事件
+        crossed_xun = new_day in (10, 20) or (new_day == 1 and current_day != 1)
+        if crossed_xun:
+            self._current_xun += 1
+            self._maybe_trigger_random_event()
+
         # 检查是否是月初一，触发月度朝会信号
         if new_day == 1 and current_day != 1:
             self.monthly_court_due.emit(new_info)
 
         self.time_advanced.emit(new_info)
         self.game_updated.emit()
+
+    # 随机事件触发概率（每旬）
+    _RANDOM_EVENT_PROB = 0.15
+    _RANDOM_EVENT_COOLDOWN_XUN = 3
+
+    def _maybe_trigger_random_event(self) -> None:
+        """每旬以固定概率触发一个随机重大事件（含冷却保护）。"""
+        import random
+        if self._current_xun - self._last_random_event_xun < self._RANDOM_EVENT_COOLDOWN_XUN:
+            return
+        if random.random() >= self._RANDOM_EVENT_PROB:
+            return
+        from game.event_template_loader import EventTemplateLoader
+        templates = list(EventTemplateLoader._load().values())
+        if not templates:
+            return
+        raw = random.choice(templates)
+        topic = EventTemplateLoader.to_court_topic(raw)
+        self._last_random_event_xun = self._current_xun
+        self.emergency_event_triggered.emit(topic)
     
     def get_game_info(self):
         """获取游戏信息"""
