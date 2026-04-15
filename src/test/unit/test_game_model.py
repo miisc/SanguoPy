@@ -364,3 +364,48 @@ class TestFoodConsumption:
         model.game_data["game_info"]["day"] = 9
         model.advance_time()
         assert model.game_data["resources"]["food"] == 0
+
+    def test_food_shortage_event_pushed_when_food_hits_zero(self, model):
+        """G1: 粮食首次归零时推送 food_shortage 紧急事件。"""
+        model.game_data["resources"]["soldiers"] = 5000
+        model.game_data["resources"]["food"] = 100
+        model.game_data["game_info"]["day"] = 9
+        before = len(model.game_data["court_meetings"])
+        model.advance_time()
+        meetings = model.game_data["court_meetings"]
+        assert len(meetings) == before + 1
+        assert meetings[-1]["event_type"] == "food_shortage"
+        assert meetings[-1]["is_emergency"] is True
+
+    def test_food_shortage_not_triggered_if_food_above_zero(self, model):
+        """G1: 粮食未归零不推送 food_shortage 事件。"""
+        model.game_data["resources"]["soldiers"] = 1000
+        model.game_data["resources"]["food"] = 50000
+        model.game_data["game_info"]["day"] = 9
+        before = len(model.game_data["court_meetings"])
+        model.advance_time()
+        assert len(model.game_data["court_meetings"]) == before
+
+    def test_food_shortage_not_triggered_twice(self, model):
+        """G1: 粮食已为 0 时再次消耗不重复推送事件。"""
+        model.game_data["resources"]["soldiers"] = 5000
+        model.game_data["resources"]["food"] = 0
+        model.game_data["game_info"]["day"] = 9
+        before = len(model.game_data["court_meetings"])
+        model.advance_time()
+        assert len(model.game_data["court_meetings"]) == before
+
+
+class TestTwelveMonthStability:
+    """G2: CORE_SYSTEMS §9 — 连续运行 12 个月不崩溃。"""
+
+    def test_twelve_months_no_exception(self, model):
+        """advance_time 360 次后无异常，关键字段仍然存在。"""
+        for _ in range(360):
+            model.advance_time()
+        info = model.game_data["game_info"]
+        assert info["year"] >= 184
+        assert "food" in model.game_data["resources"]
+        assert "zhaoling_authority" in model.game_data["court_resources"]
+        assert "intel_points" in model.game_data["court_resources"]
+        assert "faction_dimensions" in model.game_data

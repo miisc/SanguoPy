@@ -91,11 +91,26 @@ class GameModel:
         court_resources["zhaoling_authority"] = min(100, current + recovery)
     
     def _consume_food_per_xun(self):
-        """每旬消耗粮食：1 food per soldier，下限 0。"""
+        """每旬消耗粮食：1 food per soldier，下限 0。首次归零时推送紧急事件。"""
         resources = self.game_data["resources"]
         soldiers = resources.get("soldiers", 0)
         food = resources.get("food", 0)
-        resources["food"] = max(0, food - soldiers)
+        new_food = max(0, food - soldiers)
+        resources["food"] = new_food
+        if food > 0 and new_food == 0:
+            self._push_food_shortage_event()
+
+    def _push_food_shortage_event(self):
+        """推送粮草告急紧急朝会事件。"""
+        info = self.game_data["game_info"]
+        meeting = {
+            "id": f"food_shortage_{info['year']}_{info['month']}_{info['day']}",
+            "event_type": "food_shortage",
+            "title": "粮草告急",
+            "description": "军粮已耗尽，大军面临断粮危机，请陛下速做决断！",
+            "is_emergency": True,
+        }
+        self.add_court_meeting(meeting)
 
     def _run_ai_factions_monthly(self):
         """月初为所有非玩家势力运行 AI 月度决策。"""
